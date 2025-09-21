@@ -1,12 +1,14 @@
 site_name: My Notes
-site_author: Your Name
+site_author: onjackay
 site_description: Personal notes and documentation
 
-repo_url: https://github.com/yourusername/notes
+repo_url: https://github.com/onjackay/notes
 edit_uri: ""
 
 nav:
   - Home: index.md
+  - C++:
+    - cpp/crtp.md
   - VLLM:
     - vllm/1.md
 
