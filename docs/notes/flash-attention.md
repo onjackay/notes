@@ -4,11 +4,11 @@
 
 ### 3-Pass Safe Softmax
 
-Softmax 的标准定义是 
+Softmax 的标准定义是
 $$
 y_i = \frac{\exp(x_i)}{\sum_j \exp(x_j)}
 $$
-但是当 $x_i$ 很大时，$\exp(x_i)$ 会溢出。为了避免这种情况，通常会先计算输入的最大值 $m = \max_i (x_i)$，然后使用 
+但是当 $x_i$ 很大时，$\exp(x_i)$ 会溢出。为了避免这种情况，通常会先计算输入的最大值 $m = \max_i (x_i)$，然后使用
 $$
 y_i = \frac{\exp(x_i - m)}{\sum_j \exp(x_j - m)}
 $$
@@ -34,7 +34,7 @@ $$
 
 ### 1-Pass Attention
 
-忽略缩放常数 $\sqrt{d}$，标准 Attention 的计算公式是 
+忽略缩放常数 $\sqrt{d}$，标准 Attention 的计算公式是
 $$
 O = \text{Softmax}(QK^T)V
 $$
@@ -76,17 +76,33 @@ $$
 
 1. 计算 $QK^T$
     - $X = Q_i K_j^T \in \R^{(m,n)}$
-2. 对每行求 
-    - $\tilde{m}_k = \max_l(X_{k,l}) \in \R^m$
-    - $P_{k,l} = \exp(X_{k,l} - \tilde{m}) \in \R^{(m,n)}$
-    - $d_k = \sum_l P_{k,l} \in \R^m$
+2. 对每行求
+    - $\tilde{m_i}[k] = \max_l(X_{k,l}) \in \R^m$
+    - $P_{k,l} = \exp(X_{k,l} - \tilde{m_i}) \in \R^{(m,n)}$
+    - $d_i[k] = \sum_l P_{k,l} \in \R^m$
 3. 对每行更新最大值和归一化因子
-    - $m_k = \max(m'_k, \tilde{m})$
-    - $d_k = d'_k \cdot \exp(m'_k - m_k) + d_k \cdot \exp(\tilde{m}_k - m_k)$
+    - $m_i[k] = \max(m'_i[k], \tilde{m_i}[k])$
+    - $d_i[k] = d'_i[k] \cdot \exp(m'_i[k] - m_i[k]) + d_i[k] \cdot \exp(\tilde{m_i}[k] - m_i[k])$
 4. 对每行计算输出
-    - $O_i[k] = d^{-1} ((d' \cdot \exp(m' - m)) \cdot O_i[k] + \exp(\tilde{m} - m) \cdot PV) $
+    - $O_i[k] = d_i^{-1} ((d'_i \cdot \exp(m'_i - m_i)) \cdot O_i[k] + \exp(\tilde{m_i} - m_i) \cdot PV) $
 5. 给下个块更新这个块的最大值和归一化因子
-    - $m'_k = m_k$
-    - $d'_k = d_k$
+    - $m'_i = m$
+    - $d'_i = d$
 
-FlashAttention V1 把 K 和 V 的分块遍历放在外层循环，把 Q 的分块遍历放在内层循环
+FlashAttention V1 把 K 和 V 的分块遍历放在外层循环，把 Q 的分块遍历放在内层循环。
+
+## FlashAttention V2
+
+1. 减少 Cuda Core 计算
+
+    在 V1，每个 tile 中 $O_i$ 的计算都包含两次 rescale 操作：乘 $d'$ 和除 $d$。
+    V2 在每个 tile 中仅保留乘 $d'$ 的 rescale，把所有的 $d$ 的 rescale 一起放在最后。
+
+2. 调换循环顺序
+
+    V1 先循环 K 和 V，后循环 Q 的做法使得每次内循环都需要反复向 HBM 访存 $O_i, m'_i, d'_i$。
+    V2 调换了内外循环的顺序，先循环 Q，再循环 K 和 V，只在每次外循环中向 HBM 访存 $O_i, m'_i, d'_i$。
+
+3. 增加 Sequence Length 维度并行
+
+    V1 只在 Batch Size 和 Head Num 维度上并行，V2 增加了 Sequence Length 维度的并行
