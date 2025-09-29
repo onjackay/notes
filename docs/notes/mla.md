@@ -1,6 +1,6 @@
 # Multi-head Latent Attention (MLA)
 
-## Transformers
+## \topransformers
 
 ### DeepSeekV3 Configuration
 ```
@@ -69,7 +69,43 @@ attn_output, attn_weights = attention_interface(
 MLA 的 KV Cache 里存的是 `compressed_kv` 和 `k_rot`，大大减少了 KV Cache 的所需空间。
 以 DeepSeekV3 为例，每个 layer 每个 token 仅需一个长度为 192 的 Cache。
 
-> 为什么 Q 和 K 要分成 pass 和 rot 两部分，前者不经过 RoPE，后者经过 RoPE？
->
-> 我们想让 `compressed_kv` 经过的 `up_proj` 和 KV 权重矩阵（`w_k`，`w_v`）融合，但是 RoPE 夹在这两个矩阵乘中间阻止了融合。
-> MLA 的方案是让 KV 的 `pass` 部分不经过 RoPE，融合两个矩阵乘；让 `rot` 部分不参与矩阵乘，经过 RoPE 后直接与 `pass` 部分 concat。
+## 矩阵吸收
+
+这里矩阵吸收并非直接将两个连续的矩阵乘合并成一个矩阵乘（这样做丧失了 LoRA 的意义），而是交换矩阵乘的计算顺序。
+
+### 吸收 $W^{UK}$ 和 $W_{UQ}$
+
+$$
+q^\top k = (W^{UQ} c_t^Q)^\top (W^{UK} c_t^{KV}) = \left({c^Q}^\top {W^{UQ}}^\top W^{UK}\right) c^{KV}
+$$
+
+其中 $W^{UQ}$ 的形状是 `[h * qk_head_dim (24576), q_lora_rank (1536)]`，
+$W^{UK}$ 的形状是 `[h * qk_head_dim (24576), kv_lora_rank (512)]`。
+
+矩阵吸收后，可以直接把 $c_t^{KV}$ 看作是 $K$ 进行 Attention 计算，而 $c^{KV}$ 又是每个头共用的。
+因此原先的 128 heads 128+64 head_dim 的 MHA 转化为了 128 heads 512+64 head_dim 的 MQA，增大了计算强度。
+
+### 吸收 $W^{UV}$ 和 $W^O$
+
+```python
+v_t = einsum('hdc,blc->blhd', W_UV, c_t_KV) # (1)
+o   = einsum('bqhl,blhd->bqhd', attn_weights, v_t)     # (2)
+u   = einsum('hdD,bhqd->bhD', W_o, o)       # (3)
+
+# 将上述三式合并，得到总的计算过程
+u   = einsum('hdc,blc,bqhl,hdD->bhD', W_UV, c_t_KV, attn_weights, W_o)
+
+# 利用结合律改变计算顺序
+o_  = einsum('bhql,blc->bhqc', attn_weights, c_t_KV) # (4)
+o   = einsum('bhqc,hdc->bhqd', o_, W_UV)  # (5)
+u   = einsum('hdD,bhqd->bqD', W_o, o)     # (6)
+```
+
+> https://github.com/flashinfer-ai/flashinfer/pull/551
+
+> https://zhuanlan.zhihu.com/p/700214123
+
+## RoPE
+
+RoPE 作用在 $c^{KV}$ 和 $c^Q$ 上，使得 $W^{UK}$ 和 $W_{UQ}$ 不能再被吸收。
+MLA 的方案是把 K 切成两部分， `pass` 部分不经过 RoPE，使两个矩阵能够被吸收；让 `rot` 部分不参与矩阵乘，经过 RoPE 后直接与 `pass` 部分 concat。
