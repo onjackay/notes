@@ -2,11 +2,29 @@
 
 ## Transformers
 
+### DeepSeekV3 Configuration
+```
+hidden_size = 7168
+q_lora_rank = 1536
+num_heads   = 128
+qk_nope_head_dim = 128
+qk_rope_head_dim = 64
+qk_head_dim = qk_nope_head_dim + qk_rope_head_dim = 192
+```
+
+### DeepSeekV3 Attention
+
 ```python
 query_shape = (batch_size, seq_length, -1, self.qk_head_dim)
 key_shape = (batch_size, seq_length, -1, self.qk_nope_head_dim + self.v_head_dim)
 
-q_states = self.q_proj(hidden_states)
+if self.q_lora_rank is None:
+    q_states = self.q_proj(hidden_states)  # [b, s, h * qk_head_dim]
+else:
+    q_states = self.q_b_proj(self.q_a_layernorm(self.q_a_proj(hidden_states)))
+        # q_a_proj: [b, s, d] -> [b, s, q_lora_rank]   (16x down_proj)
+        # q_b_proj: [b, s, q_lora_rank] -> [b, s, h * qk_head_dim]  (16x up_proj)
+
 q_states = q_states.view(query_shape).transpose(1, 2)  # [b, h, s, qk_head_dim]
 q_pass, q_rot = torch.split(q_states, [self.qk_nope_head_dim, self.qk_rope_head_dim], dim=-1)
     # q_pass: [b, h, s, qk_nope_head_dim]
@@ -47,3 +65,11 @@ attn_output, attn_weights = attention_interface(
     **kwargs,
 )
 ```
+
+MLA 的 KV Cache 里存的是 `compressed_kv` 和 `k_rot`，大大减少了 KV Cache 的所需空间。
+以 DeepSeekV3 为例，每个 layer 每个 token 仅需一个长度为 192 的 Cache。
+
+> 为什么 Q 和 K 要分成 pass 和 rot 两部分，前者不经过 RoPE，后者经过 RoPE？
+>
+> 我们想让 `compressed_kv` 经过的 `up_proj` 和 KV 权重矩阵（`w_k`，`w_v`）融合，但是 RoPE 夹在这两个矩阵乘中间阻止了融合。
+> MLA 的方案是让 KV 的 `pass` 部分不经过 RoPE，融合两个矩阵乘；让 `rot` 部分不参与矩阵乘，经过 RoPE 后直接与 `pass` 部分 concat。
