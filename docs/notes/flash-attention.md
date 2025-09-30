@@ -106,3 +106,27 @@ FlashAttention V1 把 K 和 V 的分块遍历放在外层循环，把 Q 的分�
 3. 增加 Sequence Length 维度并行
 
     V1 只在 Batch Size 和 Head Num 维度上并行，V2 增加了 Sequence Length 维度的并行
+
+## FlashAttention V3
+
+TODO
+
+## FlashAttention vs SDPA
+
+FlashAttention 是否一定比标准的 SDPA 快？答案是否定的。
+FlashAttention 希望通过减少全局内存访问来提升性能，FA1 论文中其实给出了 FlashAttention 和 SDPA 访存量的渐进分析：
+
+| Method         | Memory Access             |
+|----------------|---------------------------|
+| SDPA           | $\Theta(Nd + N^2)$        | 
+| FlashAttention | $\Theta(N^2 d^2 M^{-1})$  |
+
+其中 $N$ 是 `seq_len`，$d$ 是 `head_dim`，$M$ 是 GPU 的 SRAM 大小。
+对于主流的模型和推理框架，`seq_len` 一般在几千以内（8192），`head_dim` 是 64/128，GPU 的 SRAM 大概是 200kB（A100: 192kB, H100: 228kB）。
+这时 $d^2 M^{-1}$ 是远小于 1 的，所以 FlashAttention 的访存量要远小于 SDPA。
+
+但是如果 `head_dim` 比较大，比如 256 或 512，或者 SRAM 比较小，比如在旧架构的 GPU 上运行，FlashAttention 的访存量可能会大于 SDPA。
+
+## FlashAttention V4
+
+Tri Dao 已经预告 FlashAttention V4 了，但还未正式发布。
