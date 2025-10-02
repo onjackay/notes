@@ -2,9 +2,7 @@
 
 This is a collection of personal notes and documentation organized by topics.
 
-## Topics
-
-- [VLLM Notes](vllm/1.md) - Initial notes on VLLM
+> 「一年太长，十二个月太短」
 
 ## Navigation
 
