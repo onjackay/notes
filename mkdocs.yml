@@ -14,6 +14,7 @@ nav:
   - Notes:
       - notes/flash-attention.md
       - notes/mla.md
+  - About: 'https://onjackay.github.io/'
 
 theme:
   name: material
