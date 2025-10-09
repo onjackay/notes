@@ -1,6 +1,6 @@
 # Multi-head Latent Attention (MLA)
 
-## \topransformers
+## Transformers
 
 ### DeepSeekV3 Configuration
 ```
@@ -71,6 +71,10 @@ MLA 的 KV Cache 里存的是 `compressed_kv` 和 `k_rot`，大大减少了 KV C
 
 ## 矩阵吸收
 
+![Before Matrix Absorbing](mla/mla_mha.png)
+
+![After Matrix Absorbing](mla/mla_mqa.png)
+
 这里矩阵吸收并非直接将两个连续的矩阵乘合并成一个矩阵乘（这样做丧失了 LoRA 的意义），而是交换矩阵乘的计算顺序。
 
 ### 吸收 $W^{UK}$ 和 $W_{UQ}$
@@ -83,7 +87,9 @@ $$
 $W^{UK}$ 的形状是 `[h * qk_head_dim (24576), kv_lora_rank (512)]`。
 
 矩阵吸收后，可以直接把 $c_t^{KV}$ 看作是 $K$ 进行 Attention 计算，而 $c^{KV}$ 又是每个头共用的。
-因此原先的 128 heads 128+64 head_dim 的 MHA 转化为了 128 heads 512+64 head_dim 的 MQA，增大了计算强度。
+因此原先的 128 heads 128+64 head_dim 的 MHA 转化为了 128 heads 512+64 head_dim 的 MQA，减小了访存量，但增加了计算量。
+
+我们在 prefill 时使用计算强度较小，访存量更大的 MHA。在 decode 时使用计算强度较大，访存量更小的 MQA。
 
 ### 吸收 $W^{UV}$ 和 $W^O$
 
@@ -101,11 +107,71 @@ o   = einsum('bhqc,hdc->bhqd', o_, W_UV)  # (5)
 u   = einsum('hdD,bhqd->bqD', W_o, o)     # (6)
 ```
 
-> https://github.com/flashinfer-ai/flashinfer/pull/551
+> <https://github.com/flashinfer-ai/flashinfer/pull/551>
 
-> https://zhuanlan.zhihu.com/p/700214123
+> <https://zhuanlan.zhihu.com/p/700214123>
 
 ## RoPE
 
 RoPE 作用在 $c^{KV}$ 和 $c^Q$ 上，使得 $W^{UK}$ 和 $W_{UQ}$ 不能再被吸收。
 MLA 的方案是把 K 切成两部分， `pass` 部分不经过 RoPE，使两个矩阵能够被吸收；让 `rot` 部分不参与矩阵乘，经过 RoPE 后直接与 `pass` 部分 concat。
+
+## MLA in vLLM
+
+```python
+class MultiHeadLatentAttention(CustomOp):
+    ...
+
+    def forward_native(
+        self,
+        positions: torch.Tensor,
+        hidden_states: torch.Tensor,
+    ) -> torch.Tensor:
+        q_c = None
+        kv_lora = None
+
+        if self.q_lora_rank is not None:
+            assert self.fused_qkv_a_proj is not None, \
+                "fused_qkv_a_proj is required when q_lora_rank is not None"
+            assert self.q_a_layernorm is not None, \
+                "q_a_layernorm is required when q_lora_rank is not None"
+            assert self.q_b_proj is not None, \
+                "q_b_proj is required when q_lora_rank is not None"
+            qkv_lora = self.fused_qkv_a_proj(hidden_states)[0]
+            q_c, kv_lora = qkv_lora.split(
+                [self.q_lora_rank, self.kv_lora_rank + self.qk_rope_head_dim],
+                dim=-1,
+            )
+            q_c = self.q_a_layernorm(q_c)
+            q = self.q_b_proj(q_c)[0]
+        else:
+            assert self.kv_a_proj_with_mqa is not None, \
+                "kv_a_proj_with_mqa is required when q_lora_rank is None"
+            assert self.q_proj is not None, \
+                "q_proj is required when q_lora_rank is None"
+            kv_lora = self.kv_a_proj_with_mqa(hidden_states)[0]
+            q = self.q_proj(hidden_states)[0]
+
+        kv_c, k_pe = kv_lora.split([self.kv_lora_rank, self.qk_rope_head_dim],
+                                   dim=-1)
+        kv_c_normed = self.kv_a_layernorm(kv_c)
+
+        q = q.view(-1, self.num_heads, self.qk_head_dim)
+        # Add head dim of 1 to k_pe
+        k_pe = k_pe.unsqueeze(1)
+
+        q[..., self.qk_nope_head_dim:], k_pe = self.rotary_emb(
+            positions, q[..., self.qk_nope_head_dim:], k_pe)
+
+        attn_out = self.mla_attn(
+            q,
+            kv_c_normed,
+            k_pe,
+            output_shape=(hidden_states.shape[0],
+                          self.num_heads * self.v_head_dim))
+        return self.o_proj(attn_out)[0]
+```
+
+vLLM 把 `q_a_proj` 和 `kv_a_proj_with_mqa` 两个对 `hidden_states` 的矩阵乘融合成 `fused_qkv_a_proj`。
+实现矩阵吸收，把 `kv_c_norm` 传进 `mla_attn`。
+KV cache 存放的是 `kv_c_normed` 和 `k_pe`。
