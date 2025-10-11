@@ -10,6 +10,7 @@ num_heads   = 128
 qk_nope_head_dim = 128
 qk_rope_head_dim = 64
 qk_head_dim = qk_nope_head_dim + qk_rope_head_dim = 192
+v_head_dim = 128
 ```
 
 ### DeepSeekV3 Attention
@@ -175,3 +176,17 @@ class MultiHeadLatentAttention(CustomOp):
 vLLM 把 `q_a_proj` 和 `kv_a_proj_with_mqa` 两个对 `hidden_states` 的矩阵乘融合成 `fused_qkv_a_proj`。
 实现矩阵吸收，把 `kv_c_norm` 传进 `mla_attn`。
 KV cache 存放的是 `kv_c_normed` 和 `k_pe`。
+
+调用链：
+
+```
+DeepseekV2MLAAttention.mla_attn = MultiHeadLatentAttention(...)
+->
+MultiHeadLatentAttention.mla_attn = Attention(..., use_mla=True, ...)
+->
+selector.py dispatch attention backend
+```
+
+在 vLLM v1 中有 CutlassMLA, FlashattnMLA, FlashinferMLA, FlashMLA, TritonMLA 后端（for CUDA），而 v0 只支持 FlashMLA 和 Triton 后端。
+vLLM 定义了一个通用接口 `MLACommonImpl`，实现了 `forward` 和 `_forward_prefill` 等方法，但是没有实现 `_forward_decode`。
+各个后端的 MLA 实现都继承 `MLACommonImpl`，各自实现 `_forward_decode`。
