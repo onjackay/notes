@@ -684,13 +684,13 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#topransformers" class="md-nav__link">
+  <a href="#transformers" class="md-nav__link">
     <span class="md-ellipsis">
-      \topransformers
+      Transformers
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="\topransformers">
+    <nav class="md-nav" aria-label="Transformers">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -758,6 +758,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#mla-in-vllm" class="md-nav__link">
+    <span class="md-ellipsis">
+      MLA in vLLM
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -813,7 +822,7 @@
 
 
 <h1 id="multi-head-latent-attention-mla">Multi-head Latent Attention (MLA)<a class="headerlink" href="#multi-head-latent-attention-mla" title="Permanent link">&para;</a></h1>
-<h2 id="topransformers">\topransformers<a class="headerlink" href="#topransformers" title="Permanent link">&para;</a></h2>
+<h2 id="transformers">Transformers<a class="headerlink" href="#transformers" title="Permanent link">&para;</a></h2>
 <h3 id="deepseekv3-configuration">DeepSeekV3 Configuration<a class="headerlink" href="#deepseekv3-configuration" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>hidden_size = 7168
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>q_lora_rank = 1536
@@ -821,6 +830,7 @@
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>qk_nope_head_dim = 128
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>qk_rope_head_dim = 64
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>qk_head_dim = qk_nope_head_dim + qk_rope_head_dim = 192
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>v_head_dim = 128
 </code></pre></div>
 <h3 id="deepseekv3-attention">DeepSeekV3 Attention<a class="headerlink" href="#deepseekv3-attention" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">query_shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_length</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">qk_head_dim</span><span class="p">)</span>
@@ -876,6 +886,8 @@
 <p>MLA 的 KV Cache 里存的是 <code>compressed_kv</code> 和 <code>k_rot</code>，大大减少了 KV Cache 的所需空间。
 以 DeepSeekV3 为例，每个 layer 每个 token 仅需一个长度为 192 的 Cache。</p>
 <h2 id="_1">矩阵吸收<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<p><img alt="Before Matrix Absorbing" src="mla_mha.png" /></p>
+<p><img alt="After Matrix Absorbing" src="mla_mqa.png" /></p>
 <p>这里矩阵吸收并非直接将两个连续的矩阵乘合并成一个矩阵乘（这样做丧失了 LoRA 的意义），而是交换矩阵乘的计算顺序。</p>
 <h3 id="wuk-w_uq">吸收 <span class="arithmatex">\(W^{UK}\)</span> 和 <span class="arithmatex">\(W_{UQ}\)</span><a class="headerlink" href="#wuk-w_uq" title="Permanent link">&para;</a></h3>
 <div class="arithmatex">\[
@@ -884,7 +896,8 @@ q^\top k = (W^{UQ} c_t^Q)^\top (W^{UK} c_t^{KV}) = \left({c^Q}^\top {W^{UQ}}^\to
 <p>其中 <span class="arithmatex">\(W^{UQ}\)</span> 的形状是 <code>[h * qk_head_dim (24576), q_lora_rank (1536)]</code>，
 <span class="arithmatex">\(W^{UK}\)</span> 的形状是 <code>[h * qk_head_dim (24576), kv_lora_rank (512)]</code>。</p>
 <p>矩阵吸收后，可以直接把 <span class="arithmatex">\(c_t^{KV}\)</span> 看作是 <span class="arithmatex">\(K\)</span> 进行 Attention 计算，而 <span class="arithmatex">\(c^{KV}\)</span> 又是每个头共用的。
-因此原先的 128 heads 128+64 head_dim 的 MHA 转化为了 128 heads 512+64 head_dim 的 MQA，增大了计算强度。</p>
+因此原先的 128 heads 128+64 head_dim 的 MHA 转化为了 128 heads 512+64 head_dim 的 MQA，减小了访存量，但增加了计算量。</p>
+<p>我们在 prefill 时使用计算强度较小，访存量更大的 MHA。在 decode 时使用计算强度较大，访存量更小的 MQA。</p>
 <h3 id="wuv-wo">吸收 <span class="arithmatex">\(W^{UV}\)</span> 和 <span class="arithmatex">\(W^O\)</span><a class="headerlink" href="#wuv-wo" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">v_t</span> <span class="o">=</span> <span class="n">einsum</span><span class="p">(</span><span class="s1">&#39;hdc,blc-&gt;blhd&#39;</span><span class="p">,</span> <span class="n">W_UV</span><span class="p">,</span> <span class="n">c_t_KV</span><span class="p">)</span> <span class="c1"># (1)</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">o</span>   <span class="o">=</span> <span class="n">einsum</span><span class="p">(</span><span class="s1">&#39;bqhl,blhd-&gt;bqhd&#39;</span><span class="p">,</span> <span class="n">attn_weights</span><span class="p">,</span> <span class="n">v_t</span><span class="p">)</span>     <span class="c1"># (2)</span>
@@ -899,12 +912,78 @@ q^\top k = (W^{UQ} c_t^Q)^\top (W^{UK} c_t^{KV}) = \left({c^Q}^\top {W^{UQ}}^\to
 <a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="n">u</span>   <span class="o">=</span> <span class="n">einsum</span><span class="p">(</span><span class="s1">&#39;hdD,bhqd-&gt;bqD&#39;</span><span class="p">,</span> <span class="n">W_o</span><span class="p">,</span> <span class="n">o</span><span class="p">)</span>     <span class="c1"># (6)</span>
 </code></pre></div>
 <blockquote>
-<p>https://github.com/flashinfer-ai/flashinfer/pull/551</p>
-<p>https://zhuanlan.zhihu.com/p/700214123</p>
+<p><a href="https://github.com/flashinfer-ai/flashinfer/pull/551">https://github.com/flashinfer-ai/flashinfer/pull/551</a></p>
+<p><a href="https://zhuanlan.zhihu.com/p/700214123">https://zhuanlan.zhihu.com/p/700214123</a></p>
 </blockquote>
 <h2 id="rope">RoPE<a class="headerlink" href="#rope" title="Permanent link">&para;</a></h2>
 <p>RoPE 作用在 <span class="arithmatex">\(c^{KV}\)</span> 和 <span class="arithmatex">\(c^Q\)</span> 上，使得 <span class="arithmatex">\(W^{UK}\)</span> 和 <span class="arithmatex">\(W_{UQ}\)</span> 不能再被吸收。
 MLA 的方案是把 K 切成两部分， <code>pass</code> 部分不经过 RoPE，使两个矩阵能够被吸收；让 <code>rot</code> 部分不参与矩阵乘，经过 RoPE 后直接与 <code>pass</code> 部分 concat。</p>
+<h2 id="mla-in-vllm">MLA in vLLM<a class="headerlink" href="#mla-in-vllm" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">MultiHeadLatentAttention</span><span class="p">(</span><span class="n">CustomOp</span><span class="p">):</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="o">...</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">forward_native</span><span class="p">(</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>        <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>        <span class="n">positions</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>        <span class="n">hidden_states</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>        <span class="n">q_c</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>        <span class="n">kv_lora</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">q_lora_rank</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">fused_qkv_a_proj</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>                <span class="s2">&quot;fused_qkv_a_proj is required when q_lora_rank is not None&quot;</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">q_a_layernorm</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>                <span class="s2">&quot;q_a_layernorm is required when q_lora_rank is not None&quot;</span>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">q_b_proj</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>                <span class="s2">&quot;q_b_proj is required when q_lora_rank is not None&quot;</span>
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>            <span class="n">qkv_lora</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fused_qkv_a_proj</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>            <span class="n">q_c</span><span class="p">,</span> <span class="n">kv_lora</span> <span class="o">=</span> <span class="n">qkv_lora</span><span class="o">.</span><span class="n">split</span><span class="p">(</span>
+<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>                <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">q_lora_rank</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">kv_lora_rank</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">qk_rope_head_dim</span><span class="p">],</span>
+<a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>                <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a>            <span class="p">)</span>
+<a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a>            <span class="n">q_c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">q_a_layernorm</span><span class="p">(</span><span class="n">q_c</span><span class="p">)</span>
+<a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a>            <span class="n">q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">q_b_proj</span><span class="p">(</span><span class="n">q_c</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a>            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">kv_a_proj_with_mqa</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
+<a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a>                <span class="s2">&quot;kv_a_proj_with_mqa is required when q_lora_rank is None&quot;</span>
+<a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a>            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">q_proj</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
+<a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a>                <span class="s2">&quot;q_proj is required when q_lora_rank is None&quot;</span>
+<a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a>            <span class="n">kv_lora</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kv_a_proj_with_mqa</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-3-32" name="__codelineno-3-32" href="#__codelineno-3-32"></a>            <span class="n">q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">q_proj</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-3-33" name="__codelineno-3-33" href="#__codelineno-3-33"></a>
+<a id="__codelineno-3-34" name="__codelineno-3-34" href="#__codelineno-3-34"></a>        <span class="n">kv_c</span><span class="p">,</span> <span class="n">k_pe</span> <span class="o">=</span> <span class="n">kv_lora</span><span class="o">.</span><span class="n">split</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">kv_lora_rank</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">qk_rope_head_dim</span><span class="p">],</span>
+<a id="__codelineno-3-35" name="__codelineno-3-35" href="#__codelineno-3-35"></a>                                   <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-3-36" name="__codelineno-3-36" href="#__codelineno-3-36"></a>        <span class="n">kv_c_normed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kv_a_layernorm</span><span class="p">(</span><span class="n">kv_c</span><span class="p">)</span>
+<a id="__codelineno-3-37" name="__codelineno-3-37" href="#__codelineno-3-37"></a>
+<a id="__codelineno-3-38" name="__codelineno-3-38" href="#__codelineno-3-38"></a>        <span class="n">q</span> <span class="o">=</span> <span class="n">q</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">qk_head_dim</span><span class="p">)</span>
+<a id="__codelineno-3-39" name="__codelineno-3-39" href="#__codelineno-3-39"></a>        <span class="c1"># Add head dim of 1 to k_pe</span>
+<a id="__codelineno-3-40" name="__codelineno-3-40" href="#__codelineno-3-40"></a>        <span class="n">k_pe</span> <span class="o">=</span> <span class="n">k_pe</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-3-41" name="__codelineno-3-41" href="#__codelineno-3-41"></a>
+<a id="__codelineno-3-42" name="__codelineno-3-42" href="#__codelineno-3-42"></a>        <span class="n">q</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">qk_nope_head_dim</span><span class="p">:],</span> <span class="n">k_pe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rotary_emb</span><span class="p">(</span>
+<a id="__codelineno-3-43" name="__codelineno-3-43" href="#__codelineno-3-43"></a>            <span class="n">positions</span><span class="p">,</span> <span class="n">q</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">qk_nope_head_dim</span><span class="p">:],</span> <span class="n">k_pe</span><span class="p">)</span>
+<a id="__codelineno-3-44" name="__codelineno-3-44" href="#__codelineno-3-44"></a>
+<a id="__codelineno-3-45" name="__codelineno-3-45" href="#__codelineno-3-45"></a>        <span class="n">attn_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mla_attn</span><span class="p">(</span>
+<a id="__codelineno-3-46" name="__codelineno-3-46" href="#__codelineno-3-46"></a>            <span class="n">q</span><span class="p">,</span>
+<a id="__codelineno-3-47" name="__codelineno-3-47" href="#__codelineno-3-47"></a>            <span class="n">kv_c_normed</span><span class="p">,</span>
+<a id="__codelineno-3-48" name="__codelineno-3-48" href="#__codelineno-3-48"></a>            <span class="n">k_pe</span><span class="p">,</span>
+<a id="__codelineno-3-49" name="__codelineno-3-49" href="#__codelineno-3-49"></a>            <span class="n">output_shape</span><span class="o">=</span><span class="p">(</span><span class="n">hidden_states</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+<a id="__codelineno-3-50" name="__codelineno-3-50" href="#__codelineno-3-50"></a>                          <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_head_dim</span><span class="p">))</span>
+<a id="__codelineno-3-51" name="__codelineno-3-51" href="#__codelineno-3-51"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">o_proj</span><span class="p">(</span><span class="n">attn_out</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+</code></pre></div>
+<p>vLLM 把 <code>q_a_proj</code> 和 <code>kv_a_proj_with_mqa</code> 两个对 <code>hidden_states</code> 的矩阵乘融合成 <code>fused_qkv_a_proj</code>。
+实现矩阵吸收，把 <code>kv_c_norm</code> 传进 <code>mla_attn</code>。
+KV cache 存放的是 <code>kv_c_normed</code> 和 <code>k_pe</code>。</p>
+<p>调用链：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>DeepseekV2MLAAttention.mla_attn = MultiHeadLatentAttention(...)
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>-&gt;
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>MultiHeadLatentAttention.mla_attn = Attention(..., use_mla=True, ...)
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>-&gt;
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>selector.py dispatch attention backend
+</code></pre></div>
+<p>在 vLLM v1 中有 CutlassMLA, FlashattnMLA, FlashinferMLA, FlashMLA, TritonMLA 后端（for CUDA），而 v0 只支持 FlashMLA 和 Triton 后端。
+vLLM 定义了一个通用接口 <code>MLACommonImpl</code>，实现了 <code>forward</code> 和 <code>_forward_prefill</code> 等方法，但是没有实现 <code>_forward_decode</code>。
+各个后端的 MLA 实现都继承 <code>MLACommonImpl</code>，各自实现 <code>_forward_decode</code>。</p>
 
 
 
