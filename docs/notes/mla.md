@@ -81,7 +81,7 @@ MLA 的 KV Cache 里存的是 `compressed_kv` 和 `k_rot`，大大减少了 KV C
 ### 吸收 $W^{UK}$ 和 $W_{UQ}$
 
 $$
-q^\top k = (W^{UQ} c_t^Q)^\top (W^{UK} c_t^{KV}) = \left({c^Q}^\top {W^{UQ}}^\top W^{UK}\right) c^{KV}
+q^\top k = (W^{UQ} c_t^Q)^\top (W^{UK} c_t^{KV}) = \left({c^Q}^\top {W^{UQ}}^\top W^{UK}\right) c^{KV} = \left({W^{UK}}^\top W^{UQ} c^Q \right)^\top c^{KV}
 $$
 
 其中 $W^{UQ}$ 的形状是 `[h * qk_head_dim (24576), q_lora_rank (1536)]`，
@@ -190,3 +190,9 @@ selector.py dispatch attention backend
 在 vLLM v1 中有 CutlassMLA, FlashattnMLA, FlashinferMLA, FlashMLA, TritonMLA 后端（for CUDA），而 v0 只支持 FlashMLA 和 Triton 后端。
 vLLM 定义了一个通用接口 `MLACommonImpl`，实现了 `forward` 和 `_forward_prefill` 等方法，但是没有实现 `_forward_decode`。
 各个后端的 MLA 实现都继承 `MLACommonImpl`，各自实现 `_forward_decode`。
+
+我们关注 `TritonMLAImpl._forward_decode` 实现，其调用了 `decode_attention_fwd`。
+由于矩阵吸收后等价于 MQA，接着调用 `decode_attention_fwd_grouped`：
+
+1. `_decode_att_m_fwd`
+2. `_decode_softmax_reducev_fwd`
