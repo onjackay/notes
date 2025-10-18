@@ -9,8 +9,6 @@ nav:
   - Home: index.md
   - C++:
       - cpp/crtp.md
-  - VLLM:
-      - vllm/1.md
   - Notes:
       - notes/flash-attention.md
       - notes/mla.md
