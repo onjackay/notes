@@ -97,3 +97,74 @@ def generate(
 首先，`add_request` 方法会将 prompt 依次加入 scheduler。
 随后不断调用 `step` 方法，直到 scheduler 中没有尚未完成的 sequence。
 在 `step` 方法中，scheduler 决定当前进行 prefill 还是 decode，并返回需要处理的 sequence，交给 model_runner 处理。
+
+## Scheduler
+
+在深入 Scheduler 之前，我们先介绍一下 Block 类和 BlockManager 类。
+
+### Block
+
+```py
+class Block:
+
+    def __init__(self, block_id):
+        self.block_id = block_id
+        self.ref_count = 0
+        self.hash = -1
+        self.token_ids = []
+
+    def update(self, hash: int, token_ids: list[int]):
+        self.hash = hash
+        self.token_ids = token_ids
+
+    def reset(self):
+        self.ref_count = 1
+        self.hash = -1
+        self.token_ids = []
+```
+
+Block 类在创建时时拿到一个 block_id，初始化引用计数，哈希，和存放的token Id。
+update 方法更新哈希值和token Id。
+reset 方法将引用计数设成1，哈希和 token Id 都变为初始状态。
+
+### BlockManager
+
+```py
+class BlockManager:
+
+    def __init__(self, num_blocks: int, block_size: int):
+        self.block_size = block_size
+        self.blocks: list[Block] = [Block(i) for i in range(num_blocks)]
+        self.hash_to_block_id: dict[int, int] = dict()
+        self.free_block_ids: deque[int] = deque(range(num_blocks))
+        self.used_block_ids: set[int] = set()
+```
+
+#### Allocate
+
+```py
+def allocate(self, seq: Sequence):
+    assert not seq.block_table
+    h = -1
+    cache_miss = False
+    for i in range(seq.num_blocks):
+        token_ids = seq.block(i)
+        h = self.compute_hash(token_ids, h) if len(token_ids) == self.block_size else -1
+        block_id = self.hash_to_block_id.get(h, -1)
+        if block_id == -1 or self.blocks[block_id].token_ids != token_ids:
+            cache_miss = True
+        if cache_miss:
+            block_id = self.free_block_ids[0]
+            block = self._allocate_block(block_id)
+        else:
+            seq.num_cached_tokens += self.block_size
+            if block_id in self.used_block_ids:
+                block = self.blocks[block_id]
+                block.ref_count += 1
+            else:
+                block = self._allocate_block(block_id)
+        if h != -1:
+            block.update(h, token_ids)
+            self.hash_to_block_id[h] = block_id
+        seq.block_table.append(block_id)
+```
