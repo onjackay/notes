@@ -16,6 +16,8 @@
         <link rel="prev" href="../flash-attention/">
       
       
+        <link rel="next" href="../../fire/theory/">
+      
       
       <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.20">
@@ -262,28 +264,6 @@
   
   
   
-  
-    
-    
-      <li class="md-tabs__item">
-        <a href="../../vllm/1/" class="md-tabs__link">
-          
-  
-  
-    
-  
-  VLLM
-
-        </a>
-      </li>
-    
-  
-
-      
-        
-  
-  
-  
     
   
   
@@ -297,6 +277,28 @@
     
   
   Notes
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../fire/theory/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  FIRE
 
         </a>
       </li>
@@ -475,85 +477,6 @@
       
   
   
-  
-  
-    
-    
-      
-        
-      
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    VLLM
-    
-  </span>
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
-            <span class="md-nav__icon md-icon"></span>
-            VLLM
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../vllm/1/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Test Title
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
     
   
   
@@ -581,10 +504,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   
@@ -597,8 +520,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             Notes
           </label>
@@ -789,6 +712,85 @@
   
   
   
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    FIRE
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            FIRE
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../fire/theory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Initialization
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="https://onjackay.github.io/" class="md-nav__link">
         
@@ -891,7 +893,7 @@
 <p>这里矩阵吸收并非直接将两个连续的矩阵乘合并成一个矩阵乘（这样做丧失了 LoRA 的意义），而是交换矩阵乘的计算顺序。</p>
 <h3 id="wuk-w_uq">吸收 <span class="arithmatex">\(W^{UK}\)</span> 和 <span class="arithmatex">\(W_{UQ}\)</span><a class="headerlink" href="#wuk-w_uq" title="Permanent link">&para;</a></h3>
 <div class="arithmatex">\[
-q^\top k = (W^{UQ} c_t^Q)^\top (W^{UK} c_t^{KV}) = \left({c^Q}^\top {W^{UQ}}^\top W^{UK}\right) c^{KV}
+q^\top k = (W^{UQ} c_t^Q)^\top (W^{UK} c_t^{KV}) = \left({c^Q}^\top {W^{UQ}}^\top W^{UK}\right) c^{KV} = \left({W^{UK}}^\top W^{UQ} c^Q \right)^\top c^{KV}
 \]</div>
 <p>其中 <span class="arithmatex">\(W^{UQ}\)</span> 的形状是 <code>[h * qk_head_dim (24576), q_lora_rank (1536)]</code>，
 <span class="arithmatex">\(W^{UK}\)</span> 的形状是 <code>[h * qk_head_dim (24576), kv_lora_rank (512)]</code>。</p>
@@ -984,6 +986,12 @@ KV cache 存放的是 <code>kv_c_normed</code> 和 <code>k_pe</code>。</p>
 <p>在 vLLM v1 中有 CutlassMLA, FlashattnMLA, FlashinferMLA, FlashMLA, TritonMLA 后端（for CUDA），而 v0 只支持 FlashMLA 和 Triton 后端。
 vLLM 定义了一个通用接口 <code>MLACommonImpl</code>，实现了 <code>forward</code> 和 <code>_forward_prefill</code> 等方法，但是没有实现 <code>_forward_decode</code>。
 各个后端的 MLA 实现都继承 <code>MLACommonImpl</code>，各自实现 <code>_forward_decode</code>。</p>
+<p>我们关注 <code>TritonMLAImpl._forward_decode</code> 实现，其调用了 <code>decode_attention_fwd</code>。
+由于矩阵吸收后等价于 MQA，接着调用 <code>decode_attention_fwd_grouped</code>：</p>
+<ol>
+<li><code>_decode_att_m_fwd</code></li>
+<li><code>_decode_softmax_reducev_fwd</code></li>
+</ol>
 
 
 
