@@ -12,6 +12,7 @@ nav:
   - Notes:
       - notes/flash-attention.md
       - notes/mla.md
+      - notes/vllm.md
   - FIRE:
       - fire/theory.md
   - About: 'https://onjackay.github.io/'
