@@ -13,6 +13,8 @@ nav:
       - notes/flash-attention.md
       - notes/mla.md
       - notes/vllm.md
+      - notes/papers.md
+      - notes/data-formats.md
   - FIRE:
       - fire/theory.md
   - About: 'https://onjackay.github.io/'

@@ -82,6 +82,8 @@ vllm bench serve --model ../models/gpt-oss-120b
 
 默认配置下，request rate 为无限制，burstiness 为 1.0。
 burstiness 为 1.0 表示请求到达服从泊松分布，否则服从 Gamma 分布，burstiness 越大则请求越均匀，越小则请求越集中。
+共 1000 个请求，每个请求输入长度 1024，输出长度 128。
+结果如下：
 
 ```
 ./bench_server.sh 
