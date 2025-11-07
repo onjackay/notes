@@ -1,4 +1,4 @@
-# Data Formats and Quantization
+# Quantization
 
 ## Data Formats
 
@@ -22,3 +22,16 @@
 | NVFP4 | FP4_E2M1. 1 FP8_E4M3 scale per 16 elements. 1 FP32 scale per tensor. |
 
 ## Quantization
+
+Refer to (vLLM docs)[https://docs.vllm.ai/en/stable/features/quantization] and codebase.
+
+### FP8 W8A8
+
+Supported on Ada and forward for FP8 tensor cores.
+
+Targeting on all Linear layers:
+
+- Weights: static, per-tensor / per-channel / per-block scaling.
+- Activations: dynamic, per-token / per-block scaling.
+
+以 per-block weight scaling 为例：w13 和 w2 在每个 [block_n, block_k] 大小的 tile 共享一个 scale，这时 hidden_states 只能采用 per-block 的 scaling，在每个 [1, block_k] 大小的 tile 上共享一个 scale。
