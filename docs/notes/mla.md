@@ -78,7 +78,7 @@ MLA 的 KV Cache 里存的是 `compressed_kv` 和 `k_rot`，大大减少了 KV C
 
 这里矩阵吸收并非直接将两个连续的矩阵乘合并成一个矩阵乘（这样做丧失了 LoRA 的意义），而是交换矩阵乘的计算顺序。
 
-### 吸收 $W^{UK}$ 和 $W_{UQ}$
+### 吸收 $W^{UK}$ 和 $W^{UQ}$
 
 $$
 q^\top k = (W^{UQ} c_t^Q)^\top (W^{UK} c_t^{KV}) = \left({c^Q}^\top {W^{UQ}}^\top W^{UK}\right) c^{KV} = \left({W^{UK}}^\top W^{UQ} c^Q \right)^\top c^{KV}
@@ -94,6 +94,8 @@ $W^{UK}$ 的形状是 `[h * qk_head_dim (24576), kv_lora_rank (512)]`。
 
 ### 吸收 $W^{UV}$ 和 $W^O$
 
+这个吸收过程稍微复杂一些。
+
 ```python
 v_t = einsum('hdc,blc->blhd', W_UV, c_t_KV) # (1)
 o   = einsum('bqhl,blhd->bqhd', attn_weights, v_t)     # (2)
@@ -107,6 +109,11 @@ o_  = einsum('bhql,blc->bhqc', attn_weights, c_t_KV) # (4)
 o   = einsum('bhqc,hdc->bhqd', o_, W_UV)  # (5)
 u   = einsum('hdD,bhqd->bqD', W_o, o)     # (6)
 ```
+
+如此通过这个矩阵吸收，我们可以直接把 $c_t^{KV}$ 看作是 V 进行 Attention 计算。
+这样，我们的 KV Cache 只需存储 $c_t^{KV}$ 和 $k_pe$。
+$K$ 由 $c_t^{KV}$ 和 $k_pe$ 拼接而成。
+$V$ 即为 $c_t^{KV}$。
 
 > <https://github.com/flashinfer-ai/flashinfer/pull/551>
 
