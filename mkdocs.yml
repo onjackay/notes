@@ -15,6 +15,7 @@ nav:
       - notes/vllm.md
       - notes/papers.md
       - notes/quantization.md
+      - notes/cute.md
   - FIRE:
       - fire/theory.md
   - About: 'https://onjackay.github.io/'
