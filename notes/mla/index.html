@@ -16,7 +16,7 @@
         <link rel="prev" href="../flash-attention/">
       
       
-        <link rel="next" href="../../fire/theory/">
+        <link rel="next" href="../vllm/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -488,6 +488,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -650,9 +658,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#wuk-w_uq" class="md-nav__link">
+  <a href="#wuk-wuq" class="md-nav__link">
     <span class="md-ellipsis">
-      吸收 \(W^{UK}\) 和 \(W_{UQ}\)
+      吸收 \(W^{UK}\) 和 \(W^{UQ}\)
     </span>
   </a>
   
@@ -694,6 +702,98 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vllm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Experiment
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../papers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Papers
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quantization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Quantization
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cute/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    CuTe
+    
+  </span>
+  
+
+      </a>
     </li>
   
 
@@ -891,7 +991,7 @@
 <p><img alt="Before Matrix Absorbing" src="mla_mha.png" /></p>
 <p><img alt="After Matrix Absorbing" src="mla_mqa.png" /></p>
 <p>这里矩阵吸收并非直接将两个连续的矩阵乘合并成一个矩阵乘（这样做丧失了 LoRA 的意义），而是交换矩阵乘的计算顺序。</p>
-<h3 id="wuk-w_uq">吸收 <span class="arithmatex">\(W^{UK}\)</span> 和 <span class="arithmatex">\(W_{UQ}\)</span><a class="headerlink" href="#wuk-w_uq" title="Permanent link">&para;</a></h3>
+<h3 id="wuk-wuq">吸收 <span class="arithmatex">\(W^{UK}\)</span> 和 <span class="arithmatex">\(W^{UQ}\)</span><a class="headerlink" href="#wuk-wuq" title="Permanent link">&para;</a></h3>
 <div class="arithmatex">\[
 q^\top k = (W^{UQ} c_t^Q)^\top (W^{UK} c_t^{KV}) = \left({c^Q}^\top {W^{UQ}}^\top W^{UK}\right) c^{KV} = \left({W^{UK}}^\top W^{UQ} c^Q \right)^\top c^{KV}
 \]</div>
@@ -901,6 +1001,7 @@ q^\top k = (W^{UQ} c_t^Q)^\top (W^{UK} c_t^{KV}) = \left({c^Q}^\top {W^{UQ}}^\to
 因此原先的 128 heads 128+64 head_dim 的 MHA 转化为了 128 heads 512+64 head_dim 的 MQA，减小了访存量，但增加了计算量。</p>
 <p>我们在 prefill 时使用计算强度较小，访存量更大的 MHA。在 decode 时使用计算强度较大，访存量更小的 MQA。</p>
 <h3 id="wuv-wo">吸收 <span class="arithmatex">\(W^{UV}\)</span> 和 <span class="arithmatex">\(W^O\)</span><a class="headerlink" href="#wuv-wo" title="Permanent link">&para;</a></h3>
+<p>这个吸收过程稍微复杂一些。</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">v_t</span> <span class="o">=</span> <span class="n">einsum</span><span class="p">(</span><span class="s1">&#39;hdc,blc-&gt;blhd&#39;</span><span class="p">,</span> <span class="n">W_UV</span><span class="p">,</span> <span class="n">c_t_KV</span><span class="p">)</span> <span class="c1"># (1)</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">o</span>   <span class="o">=</span> <span class="n">einsum</span><span class="p">(</span><span class="s1">&#39;bqhl,blhd-&gt;bqhd&#39;</span><span class="p">,</span> <span class="n">attn_weights</span><span class="p">,</span> <span class="n">v_t</span><span class="p">)</span>     <span class="c1"># (2)</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">u</span>   <span class="o">=</span> <span class="n">einsum</span><span class="p">(</span><span class="s1">&#39;hdD,bhqd-&gt;bhD&#39;</span><span class="p">,</span> <span class="n">W_o</span><span class="p">,</span> <span class="n">o</span><span class="p">)</span>       <span class="c1"># (3)</span>
@@ -913,6 +1014,10 @@ q^\top k = (W^{UQ} c_t^Q)^\top (W^{UK} c_t^{KV}) = \left({c^Q}^\top {W^{UQ}}^\to
 <a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">o</span>   <span class="o">=</span> <span class="n">einsum</span><span class="p">(</span><span class="s1">&#39;bhqc,hdc-&gt;bhqd&#39;</span><span class="p">,</span> <span class="n">o_</span><span class="p">,</span> <span class="n">W_UV</span><span class="p">)</span>  <span class="c1"># (5)</span>
 <a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="n">u</span>   <span class="o">=</span> <span class="n">einsum</span><span class="p">(</span><span class="s1">&#39;hdD,bhqd-&gt;bqD&#39;</span><span class="p">,</span> <span class="n">W_o</span><span class="p">,</span> <span class="n">o</span><span class="p">)</span>     <span class="c1"># (6)</span>
 </code></pre></div>
+<p>如此通过这个矩阵吸收，我们可以直接把 <span class="arithmatex">\(c_t^{KV}\)</span> 看作是 V 进行 Attention 计算。
+这样，我们的 KV Cache 只需存储 <span class="arithmatex">\(c_t^{KV}\)</span> 和 <span class="arithmatex">\(k_pe\)</span>。
+<span class="arithmatex">\(K\)</span> 由 <span class="arithmatex">\(c_t^{KV}\)</span> 和 <span class="arithmatex">\(k_pe\)</span> 拼接而成。
+<span class="arithmatex">\(V\)</span> 即为 <span class="arithmatex">\(c_t^{KV}\)</span>。</p>
 <blockquote>
 <p><a href="https://github.com/flashinfer-ai/flashinfer/pull/551">https://github.com/flashinfer-ai/flashinfer/pull/551</a></p>
 <p><a href="https://zhuanlan.zhihu.com/p/700214123">https://zhuanlan.zhihu.com/p/700214123</a></p>
