@@ -19,7 +19,7 @@ stride 描述了 tensor 在各个维度上的相邻元素在物理坐标上的�
 每个逻辑坐标对应的物理坐标也很容易得到：
 
 $$
-Id_{physical} = \sum_i Coord_{i} Stride_{i}.
+Id_{physical} = \sum_i Coord_{i} \times Stride_{i}.
 $$
 
 用 shape 和 stride 来描述 tensor 很好的刻画了一位存储结构和高维逻辑结构的关系，
@@ -39,9 +39,33 @@ $$
 在 CuTe Layout 中，每个维度对应的 shape 不再必须为一个整数，也可以包含多个整数。
 在上图 c 的例子中，行维度上 shape 是 4，stride 是 2，行为与上节所介绍的一致。
 列维度上，shape 是 (2, 4)，stride 是 (1, 8)，这里的 shape 和 stride 是按照从里往外的顺序：
-连续的 2 列先构成一个小 tensor，连续 4 个小 tensor 再构成所有列。
-在每个小 tensor 中，同一行相邻两列的物理坐标相差 1。
-对于在列上相邻的两个小 tensor，相同位置的元素物理坐标相差 8。
+连续的 2 列先构成一个块，连续 4 个块 再构成所有列。
+在每个块中，同一行相邻两列的物理坐标相差 1。
+对于在列上相邻的两个块，相同位置的元素物理坐标相差 8。
+类似的，上图 d 的例子在行维度上切成了 2 个由连续 2 行构成的块。
+块内的 stride 为 1，块间的 stride 为 4。
+在列维度上切成了 4 个由连续 2 列构成的块。
+块内的 stride 为 2，块间的 stride 为 8。
+
+接下来，我们来分析 CuTe 中 Layout 的实现，给出 Layout 较为严谨的定义。
+
+### IntTuple
+
+前置知识：静态整数 `Int<2>{}` (`_2`) 和动态整数 `int{2}` (`2`)，统称整数 (Integer)。
+
+定义：`IntTuple` 是一个整数，或者是由 IntTuple 组成的元组。
+
+例如，`2`, `_3`, `make_tuple(2, _3)`, `make_tuple(42, make_tuple(_1, 3), _17)` 都是 IntTuple。
+
+在 CuTe 中，`Shape` 和 `Stride` 都是 IntTuple。
+`Layout` 是一个 `Shape` 和 `Stride` 组成的元组，描述了逻辑坐标 `Coord` 到一维物理坐标的映射。
+这个映射由下面的代码实现，总结成三条规则：
+
+1. 当 Coord, Shape, Stride 都是整数时，物理坐标为 `Coord x Stride`。
+2. 当 Coord 是整数，Shape 和 Stride 是元组时，则当前维度上需要分块。从最里面的块开始，需要从整数 Coord 计算出块内偏移和块的坐标（第几块），向外迭代，累加物理坐标。
+3. 当 Coord, Shape, Stride 都是元组时，则迭代元组内的每一项，累加物理坐标。
+
+下面代码的注释解释的比较清楚：
 
 ```cpp
 /** crd2idx(c,s,d) maps a coordinate within <Shape,Stride> to an index
