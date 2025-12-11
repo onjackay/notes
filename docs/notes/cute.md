@@ -49,7 +49,7 @@ $$
 
 接下来，我们来分析 CuTe 中 Layout 的实现，给出 Layout 较为严谨的定义。
 
-### IntTuple
+### Shape, Stride, Layout
 
 前置知识：静态整数 `Int<2>{}` (`_2`) 和动态整数 `int{2}` (`2`)，统称整数 (Integer)。
 
@@ -62,7 +62,7 @@ $$
 这个映射由下面的代码实现，总结成三条规则：
 
 1. 当 Coord, Shape, Stride 都是整数时，物理坐标为 `Coord x Stride`。
-2. 当 Coord 是整数，Shape 和 Stride 是元组时，则当前维度上需要分块。从最里面的块开始，需要从整数 Coord 计算出块内偏移和块的坐标（第几块），向外迭代，累加物理坐标。
+2. 当 Coord 是整数，Shape 和 Stride 是元组时，则当前维度上需要分块。按照最低维在先的规则，从最里面的块开始，需要从整数 Coord 计算出块内偏移和块的坐标（第几块），向外迭代，累加物理坐标。
 3. 当 Coord, Shape, Stride 都是元组时，则迭代元组内的每一项，累加物理坐标。
 
 下面代码的注释解释的比较清楚：
@@ -147,3 +147,213 @@ crd2idx(Coord  const& coord,
   CUTE_GCC_UNREACHABLE;
 }
 ```
+
+相反，也有从一维物理坐标到逻辑坐标到映射，同样按照最低维在先的规则：
+
+```cpp
+/** idx2crd(i,s,d) splits an index into a coordinate within <Shape,Stride>.
+ *
+ * This is computed as follows:
+ *  [index, shape, and stride are all integers => determine 1D coord]
+ * op(i, s, d)             => (i / d) % s
+ *  [index is integer, shape and stride are tuple => determine component for each mode]
+ * op(i, (s,S), (d,D))     => (op(i, s, d), op(i, S, D)...)
+ *  [index, shape, and stride are all tuples => consider each mode independently]
+ * op((i,I), (s,S), (d,D)) => (op(i, s, d), op((I), (S), (D)))
+ *
+ * NOTE: This only works for compact shape+stride layouts. A more general version would
+ *       apply to all surjective layouts
+ */
+template <class Index, class Shape, class Stride>
+CUTE_HOST_DEVICE constexpr
+auto
+idx2crd(Index  const& idx,
+        Shape  const& shape,
+        Stride const& stride)
+{
+  if constexpr (is_tuple<Index>::value) {
+    if constexpr (is_tuple<Shape>::value) {      // tuple tuple tuple
+      static_assert(tuple_size<Index>::value == tuple_size< Shape>::value, "Mismatched Ranks");
+      static_assert(tuple_size<Index>::value == tuple_size<Stride>::value, "Mismatched Ranks");
+      return transform(idx, shape, stride, [](auto const& i, auto const& s, auto const& d){ return idx2crd(i,s,d); });
+    } else {                                     // tuple "int" "int"
+      static_assert(sizeof(Index) == 0, "Invalid parameters");
+    }
+  } else {
+    if constexpr (is_tuple<Shape>::value) {
+      if constexpr (is_tuple<Stride>::value) {   // "int" tuple tuple
+        static_assert(tuple_size<Shape>::value == tuple_size<Stride>::value, "Mismatched Ranks");
+        return transform(shape, stride, [&](auto const& s, auto const& d){ return idx2crd(idx,s,d); });
+      } else {                                   // "int" tuple "int"
+        return transform(shape, compact_col_major(shape, stride), [&](auto const& s, auto const& d){ return idx2crd(idx,s,d); });
+      }
+    } else {                                     // "int" "int" "int"
+      if constexpr (is_constant<1, Shape>::value) {
+        // Skip potential stride-0 division
+        return Int<0>{};
+      } else {
+        return (idx / stride) % shape;
+      }
+    }
+  }
+
+  CUTE_GCC_UNREACHABLE;
+}
+
+/** idx2crd(i,s) splits an index into a coordinate within Shape
+ * via a colexicographical enumeration of coordinates in Shape.
+ * c0 = (idx / 1) % s0
+ * c1 = (idx / s0) % s1
+ * c2 = (idx / (s0 * s1)) % s2
+ * ...
+ */
+template <class Index, class Shape>
+CUTE_HOST_DEVICE constexpr
+auto
+idx2crd(Index const& idx,
+        Shape const& shape)
+{
+  if constexpr (is_tuple<Index>::value) {
+    if constexpr (is_tuple<Shape>::value) {      // tuple tuple
+      static_assert(tuple_size<Index>::value == tuple_size<Shape>::value, "Mismatched Ranks");
+      return transform(idx, shape, [](auto const& i, auto const& s) { return idx2crd(i,s); });
+    } else {                                     // tuple "int"
+      static_assert(sizeof(Index) == 0, "Invalid parameters");
+    }
+  } else {
+    if constexpr (is_tuple<Shape>::value) {      // "int" tuple
+      return transform_leaf(as_arithmetic_tuple(crd2idx(idx, shape, make_basis_like(shape))), identity{});
+    } else {                                     // "int" "int"
+      return idx;
+    }
+  }
+}
+```
+
+Layout 的构造也可以只提供 Shape，不提供 Stride。
+这时会按照 LayoutLeft （最里的维度在先，即 Column major）构造 Stride。
+具体实例可见下节。
+
+### Layout Manipulation
+
+#### Sublayouts
+
+多层单点选取：
+
+```cpp
+Layout a   = Layout<Shape<_4,Shape<_3,_6>>>{}; // (4,(3,6)):(1,(4,12))
+Layout a0  = layout<0>(a);                     // 4:1
+Layout a1  = layout<1>(a);                     // (3,6):(4,12)
+Layout a10 = layout<1,0>(a);                   // 3:4
+Layout a11 = layout<1,1>(a);                   // 6:12
+```
+
+单层多点选取：
+
+```cpp
+Layout a   = Layout<Shape<_2,_3,_5,_7>>{};     // (2,3,5,7):(1,2,6,30)
+Layout a13 = select<1,3>(a);                   // (3,7):(2,30)
+Layout a01 = select<0,1,3>(a);                 // (2,3,7):(1,2,30)
+Layout a2  = select<2>(a);                     // (5):(6)
+```
+
+单层范围选取：
+
+```cpp
+Layout a   = Layout<Shape<_2,_3,_5,_7>>{};     // (2,3,5,7):(1,2,6,30)
+Layout a13 = take<1,3>(a);                     // (3,5):(2,6)
+Layout a14 = take<1,4>(a);                     // (3,5,7):(2,6,30)
+// take<1,1> not allowed. Empty layouts not allowed.
+```
+
+#### Concatenation
+
+```cpp
+Layout a = Layout<_3,_1>{};                     // 3:1
+Layout b = Layout<_4,_3>{};                     // 4:3
+Layout row = make_layout(a, b);                 // (3,4):(1,3)
+Layout col = make_layout(b, a);                 // (4,3):(3,1)
+Layout q   = make_layout(row, col);             // ((3,4),(4,3)):((1,3),(3,1))
+Layout aa  = make_layout(a);                    // (3):(1)
+Layout aaa = make_layout(aa);                   // ((3)):((1))
+Layout d   = make_layout(a, make_layout(a), a); // (3,(3),3):(1,(1),1)
+```
+
+#### Grouping and Flattening
+
+```cpp
+Layout a = Layout<Shape<_2,_3,_5,_7>>{};  // (_2,_3,_5,_7):(_1,_2,_6,_30)
+Layout b = group<0,2>(a);                 // ((_2,_3),_5,_7):((_1,_2),_6,_30)
+Layout c = group<1,3>(b);                 // ((_2,_3),(_5,_7)):((_1,_2),(_6,_30))
+Layout f = flatten(b);                    // (_2,_3,_5,_7):(_1,_2,_6,_30)
+Layout e = flatten(c);                    // (_2,_3,_5,_7):(_1,_2,_6,_30)
+```
+
+## Layout Algebra
+
+### Coalesce
+
+Coalesce 操作是对 Layout 的简化。例如：
+
+```cpp
+auto layout = Layout<Shape <_2,Shape <_1,_6>>,
+                     Stride<_1,Stride<_6,_2>>>{};
+auto result = coalesce(layout);    // _12:_1
+```
+
+考虑 Coalesce 一个两维的 Layout `(s0, s1):(d0, d1)`，存在四种情况：
+
+1. `(s0, _1):(d0, d1) => s0:d0`，移除大小为 1 的维度
+2. `(_1, s1):(d0, d1) => s1:d1`，移除大小为 1 的维度
+3. `(s0, s1):(d0, s0*d0) => s0*s1:d0`
+4. 其他情况则无法合并
+
+支持按维度 Coalesce:
+
+```cpp
+auto a = Layout<Shape <_2,Shape <_1,_6>>,
+                Stride<_1,Stride<_6,_2>>>{};
+auto result = coalesce(a, Step<_1,_1>{});   // (_2,_6):(_1,_2)
+// Identical to
+auto same_r = make_layout(coalesce(layout<0>(a)),
+                          coalesce(layout<1>(a)));
+```
+
+### Composition
+
+既然 Layout 是从整数到整数的映射，我们可以复合两个 Layout 成一个新的 Layout，就像复合函数。
+
+```cpp
+// @post compatible(@a layout_b, @a result)
+// @post for all i, 0 <= i < size(@a layout_b), @a result(i) == @a layout_a(@a layout_b(i)))
+Layout composition(LayoutA const& layout_a, LayoutB const& layout_b)
+```
+
+也可以按维度复合：
+
+```cpp
+// (12,(4,8)):(59,(13,1))
+auto a = make_layout(make_shape (12,make_shape ( 4,8)),
+                     make_stride(59,make_stride(13,1)));
+// <3:4, 8:2>
+auto tiler = make_tile(Layout<_3,_4>{},  // Apply 3:4 to mode-0
+                       Layout<_8,_2>{}); // Apply 8:2 to mode-1
+
+// (_3,(2,4)):(236,(26,1))
+auto result = composition(a, tiler);
+// Identical to
+auto same_r = make_layout(composition(layout<0>(a), get<0>(tiler)),
+                          composition(layout<1>(a), get<1>(tiler)));
+```
+
+### Complement
+
+一个 Layout 可以不是单射的，这时物理坐标的范围（codomain）会大于逻辑坐标的范围（domain）。
+Layouot 的补集 Complement 用来描述 codomain 中没被映射到的位置。
+
+- `complement(4:1, 24) => 6:4`，因为 `(4, 6):(1, 4)` 有 codomain 大小为 24
+- `complement(6:4, 24) => 6:4`，因为 `(6, 4):(4, 1)` 有 codomain 大小为 24
+
+![Complement Example](cute/complement1.png)
+
+### Division (Tiling)
