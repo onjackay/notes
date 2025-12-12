@@ -357,3 +357,82 @@ Layouot 的补集 Complement 用来描述 codomain 中没被映射到的位置�
 ![Complement Example](cute/complement1.png)
 
 ### Division (Tiling)
+
+Layout 的除法运算表示按照除数 Layout 对被除数 Layout 的划分。
+除法的结果是一个两维的 Layout。
+可以把除数 Layout 理解成 Tile 的 Layout，除法结果的第一维是 Tile 内的 Layout，第二维是被除数 Layout 中 Tile 间的 Layout。
+
+> Layout 除法共有四种：logical, zipped, tiled, flat。下面先介绍的除法指的是 logical divide。
+
+具体的，先把被除数和除数 Layout 都展平成一维，除法结果 Layout 的每个 Tile 按照除数 Layout 的索引，在被除数中取值。
+可以参考下图中的例子：
+
+![Divide Example 1](cute/divide1.png)
+
+实际上，我们可以给出上述除法的严格定义：
+
+$$
+A / B := A \circ (B, B^*)
+$$
+
+A 与 B 的 logical divide，是 B 与 B 的补集 (complement) 的拼接 (concatenation)，再和 A 的复合 (composition)。
+
+考虑当 B 是一个单射时，有
+
+$$
+A / B = A \circ (B, B^*) = (A \circ B, A \circ B^*)
+$$
+
+可以注意到结果的第一维是单个 Tile 内的 Layout，而第二维是被除数 A 中各个 Tile 的 Layout。
+
+上述的 logical divide 也可以扩展至多维，对每一维分别做一维的 logical divide。见下图：
+
+> 这里出现的尖括号 `B = <3:3, (2,4):(1,8)>` 表示 B 是一个 Tiler，用来代表运算是对每个维度分别操作的。
+
+![2D Logical Divide](cute/divide2.png)
+
+前文提到，除了 logical divide，还有 zipped，tiled，flat divide 三种除法运算。
+这三种除法与 logical divide 的区别仅在于结果 layout 的排布：
+
+```
+Layout Shape : (M, N, L, ...)
+Tiler Shape  : <TileM, TileN>
+
+logical_divide : ((TileM,RestM), (TileN,RestN), L, ...)
+zipped_divide  : ((TileM,TileN), (RestM,RestN,L,...))
+tiled_divide   : ((TileM,TileN), RestM, RestN, L, ...)
+flat_divide    : (TileM, TileN, RestM, RestN, L, ...)
+```
+
+### Product (Tiling)
+
+有了除法之后，我们可以把乘法想象成除法的逆运算。
+除法是将一个大的 Layout 按照某种 Tiling 分块，乘法则是将小的分块 Layout 组合成整个 Layout。
+Logical product 的严格定义为：
+
+$$
+A \otimes B = (A, A^* \circ B)
+$$
+
+A 与 B 的乘积有两维，第一维是 A 本身，第二维是 A 的补集和 B 的复合。
+以下是两个一维乘法的例子：
+
+![1D Logical Product 1](cute/product1.png)
+
+![1D Logical Product 2](cute/product2.png)
+
+从二维开始，logical product 变得反直觉了。
+在下图中，我们希望把 2x5 的 Tile 在列方向上重复 3 次，在行方向上重复 4 次。
+然而，这个操作所需的 B Layout 是 `<3:5, 4:6>`，这需要从 A 的 Layout 中推导出来，且并不直接。
+
+![2D Logical Product](cute/product2d.png)
+
+CuTe 提供了 `blocked_product` 和 `raked_product`，来简化这样的乘法操作。
+
+![Blocked Product](cute/productblocked2d.png)
+
+Blocked product 把 Layout A 连续的按照 Layout B 进行排布。
+
+![Raked Product](cute/productraked2d.png)
+
+Raked product 把 Layout A 中每个元素按 Layout B 进行排布，再按 Layout A 进行排布。 
