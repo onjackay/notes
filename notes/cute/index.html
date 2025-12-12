@@ -735,9 +735,111 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#inttuple" class="md-nav__link">
+  <a href="#shape-stride-layout" class="md-nav__link">
     <span class="md-ellipsis">
-      IntTuple
+      Shape, Stride, Layout
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#layout-manipulation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Layout Manipulation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Layout Manipulation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sublayouts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sublayouts
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#concatenation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Concatenation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#grouping-and-flattening" class="md-nav__link">
+    <span class="md-ellipsis">
+      Grouping and Flattening
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#layout-algebra" class="md-nav__link">
+    <span class="md-ellipsis">
+      Layout Algebra
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Layout Algebra">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#coalesce" class="md-nav__link">
+    <span class="md-ellipsis">
+      Coalesce
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#composition" class="md-nav__link">
+    <span class="md-ellipsis">
+      Composition
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#complement" class="md-nav__link">
+    <span class="md-ellipsis">
+      Complement
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#division-tiling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Division (Tiling)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#product-tiling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Product (Tiling)
     </span>
   </a>
   
@@ -920,7 +1022,7 @@ Id_{physical} = \sum_i Coord_{i} \times Stride_{i}.
 在列维度上切成了 4 个由连续 2 列构成的块。
 块内的 stride 为 2，块间的 stride 为 8。</p>
 <p>接下来，我们来分析 CuTe 中 Layout 的实现，给出 Layout 较为严谨的定义。</p>
-<h3 id="inttuple">IntTuple<a class="headerlink" href="#inttuple" title="Permanent link">&para;</a></h3>
+<h3 id="shape-stride-layout">Shape, Stride, Layout<a class="headerlink" href="#shape-stride-layout" title="Permanent link">&para;</a></h3>
 <p>前置知识：静态整数 <code>Int&lt;2&gt;{}</code> (<code>_2</code>) 和动态整数 <code>int{2}</code> (<code>2</code>)，统称整数 (Integer)。</p>
 <p>定义：<code>IntTuple</code> 是一个整数，或者是由 IntTuple 组成的元组。</p>
 <p>例如，<code>2</code>, <code>_3</code>, <code>make_tuple(2, _3)</code>, <code>make_tuple(42, make_tuple(_1, 3), _17)</code> 都是 IntTuple。</p>
@@ -929,7 +1031,7 @@ Id_{physical} = \sum_i Coord_{i} \times Stride_{i}.
 这个映射由下面的代码实现，总结成三条规则：</p>
 <ol>
 <li>当 Coord, Shape, Stride 都是整数时，物理坐标为 <code>Coord x Stride</code>。</li>
-<li>当 Coord 是整数，Shape 和 Stride 是元组时，则当前维度上需要分块。从最里面的块开始，需要从整数 Coord 计算出块内偏移和块的坐标（第几块），向外迭代，累加物理坐标。</li>
+<li>当 Coord 是整数，Shape 和 Stride 是元组时，则当前维度上需要分块。按照最低维在先的规则，从最里面的块开始，需要从整数 Coord 计算出块内偏移和块的坐标（第几块），向外迭代，累加物理坐标。</li>
 <li>当 Coord, Shape, Stride 都是元组时，则迭代元组内的每一项，累加物理坐标。</li>
 </ol>
 <p>下面代码的注释解释的比较清楚：</p>
@@ -1012,6 +1114,231 @@ Id_{physical} = \sum_i Coord_{i} \times Stride_{i}.
 <a id="__codelineno-0-77" name="__codelineno-0-77" href="#__codelineno-0-77"></a><span class="w">  </span><span class="n">CUTE_GCC_UNREACHABLE</span><span class="p">;</span>
 <a id="__codelineno-0-78" name="__codelineno-0-78" href="#__codelineno-0-78"></a><span class="p">}</span>
 </code></pre></div>
+<p>相反，也有从一维物理坐标到逻辑坐标到映射，同样按照最低维在先的规则：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="cm">/** idx2crd(i,s,d) splits an index into a coordinate within &lt;Shape,Stride&gt;.</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="cm"> *</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="cm"> * This is computed as follows:</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="cm"> *  [index, shape, and stride are all integers =&gt; determine 1D coord]</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="cm"> * op(i, s, d)             =&gt; (i / d) % s</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="cm"> *  [index is integer, shape and stride are tuple =&gt; determine component for each mode]</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="cm"> * op(i, (s,S), (d,D))     =&gt; (op(i, s, d), op(i, S, D)...)</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="cm"> *  [index, shape, and stride are all tuples =&gt; consider each mode independently]</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="cm"> * op((i,I), (s,S), (d,D)) =&gt; (op(i, s, d), op((I), (S), (D)))</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="cm"> *</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="cm"> * NOTE: This only works for compact shape+stride layouts. A more general version would</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="cm"> *       apply to all surjective layouts</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="cm"> */</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">class</span><span class="w"> </span><span class="nc">Index</span><span class="p">,</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">Shape</span><span class="p">,</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">Stride</span><span class="o">&gt;</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="n">CUTE_HOST_DEVICE</span><span class="w"> </span><span class="k">constexpr</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="k">auto</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="n">idx2crd</span><span class="p">(</span><span class="n">Index</span><span class="w">  </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="n">idx</span><span class="p">,</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">        </span><span class="n">Shape</span><span class="w">  </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="n">shape</span><span class="p">,</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w">        </span><span class="n">Stride</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="n">stride</span><span class="p">)</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="p">{</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="p">(</span><span class="n">is_tuple</span><span class="o">&lt;</span><span class="n">Index</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="p">(</span><span class="n">is_tuple</span><span class="o">&lt;</span><span class="n">Shape</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">      </span><span class="c1">// tuple tuple tuple</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="w">      </span><span class="k">static_assert</span><span class="p">(</span><span class="n">tuple_size</span><span class="o">&lt;</span><span class="n">Index</span><span class="o">&gt;::</span><span class="n">value</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">tuple_size</span><span class="o">&lt;</span><span class="w"> </span><span class="n">Shape</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Mismatched Ranks&quot;</span><span class="p">);</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="w">      </span><span class="k">static_assert</span><span class="p">(</span><span class="n">tuple_size</span><span class="o">&lt;</span><span class="n">Index</span><span class="o">&gt;::</span><span class="n">value</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">tuple_size</span><span class="o">&lt;</span><span class="n">Stride</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Mismatched Ranks&quot;</span><span class="p">);</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">transform</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span><span class="w"> </span><span class="n">shape</span><span class="p">,</span><span class="w"> </span><span class="n">stride</span><span class="p">,</span><span class="w"> </span><span class="p">[](</span><span class="k">auto</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="n">s</span><span class="p">,</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="n">d</span><span class="p">){</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">idx2crd</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">s</span><span class="p">,</span><span class="n">d</span><span class="p">);</span><span class="w"> </span><span class="p">});</span>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">                                     </span><span class="c1">// tuple &quot;int&quot; &quot;int&quot;</span>
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="w">      </span><span class="k">static_assert</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">Index</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Invalid parameters&quot;</span><span class="p">);</span>
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="p">(</span><span class="n">is_tuple</span><span class="o">&lt;</span><span class="n">Shape</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="p">(</span><span class="n">is_tuple</span><span class="o">&lt;</span><span class="n">Stride</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">   </span><span class="c1">// &quot;int&quot; tuple tuple</span>
+<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a><span class="w">        </span><span class="k">static_assert</span><span class="p">(</span><span class="n">tuple_size</span><span class="o">&lt;</span><span class="n">Shape</span><span class="o">&gt;::</span><span class="n">value</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">tuple_size</span><span class="o">&lt;</span><span class="n">Stride</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Mismatched Ranks&quot;</span><span class="p">);</span>
+<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">transform</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span><span class="w"> </span><span class="n">stride</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="o">&amp;</span><span class="p">](</span><span class="k">auto</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="n">s</span><span class="p">,</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="n">d</span><span class="p">){</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">idx2crd</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span><span class="n">s</span><span class="p">,</span><span class="n">d</span><span class="p">);</span><span class="w"> </span><span class="p">});</span>
+<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a><span class="w">      </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">                                   </span><span class="c1">// &quot;int&quot; tuple &quot;int&quot;</span>
+<a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">transform</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span><span class="w"> </span><span class="n">compact_col_major</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span><span class="w"> </span><span class="n">stride</span><span class="p">),</span><span class="w"> </span><span class="p">[</span><span class="o">&amp;</span><span class="p">](</span><span class="k">auto</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="n">s</span><span class="p">,</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="n">d</span><span class="p">){</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">idx2crd</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span><span class="n">s</span><span class="p">,</span><span class="n">d</span><span class="p">);</span><span class="w"> </span><span class="p">});</span>
+<a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a><span class="w">      </span><span class="p">}</span>
+<a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a><span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">                                     </span><span class="c1">// &quot;int&quot; &quot;int&quot; &quot;int&quot;</span>
+<a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="p">(</span><span class="n">is_constant</span><span class="o">&lt;</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">Shape</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a><span class="w">        </span><span class="c1">// Skip potential stride-0 division</span>
+<a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">{};</span>
+<a id="__codelineno-1-41" name="__codelineno-1-41" href="#__codelineno-1-41"></a><span class="w">      </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-42" name="__codelineno-1-42" href="#__codelineno-1-42"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="n">idx</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">stride</span><span class="p">)</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">shape</span><span class="p">;</span>
+<a id="__codelineno-1-43" name="__codelineno-1-43" href="#__codelineno-1-43"></a><span class="w">      </span><span class="p">}</span>
+<a id="__codelineno-1-44" name="__codelineno-1-44" href="#__codelineno-1-44"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-1-45" name="__codelineno-1-45" href="#__codelineno-1-45"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-1-46" name="__codelineno-1-46" href="#__codelineno-1-46"></a>
+<a id="__codelineno-1-47" name="__codelineno-1-47" href="#__codelineno-1-47"></a><span class="w">  </span><span class="n">CUTE_GCC_UNREACHABLE</span><span class="p">;</span>
+<a id="__codelineno-1-48" name="__codelineno-1-48" href="#__codelineno-1-48"></a><span class="p">}</span>
+<a id="__codelineno-1-49" name="__codelineno-1-49" href="#__codelineno-1-49"></a>
+<a id="__codelineno-1-50" name="__codelineno-1-50" href="#__codelineno-1-50"></a><span class="cm">/** idx2crd(i,s) splits an index into a coordinate within Shape</span>
+<a id="__codelineno-1-51" name="__codelineno-1-51" href="#__codelineno-1-51"></a><span class="cm"> * via a colexicographical enumeration of coordinates in Shape.</span>
+<a id="__codelineno-1-52" name="__codelineno-1-52" href="#__codelineno-1-52"></a><span class="cm"> * c0 = (idx / 1) % s0</span>
+<a id="__codelineno-1-53" name="__codelineno-1-53" href="#__codelineno-1-53"></a><span class="cm"> * c1 = (idx / s0) % s1</span>
+<a id="__codelineno-1-54" name="__codelineno-1-54" href="#__codelineno-1-54"></a><span class="cm"> * c2 = (idx / (s0 * s1)) % s2</span>
+<a id="__codelineno-1-55" name="__codelineno-1-55" href="#__codelineno-1-55"></a><span class="cm"> * ...</span>
+<a id="__codelineno-1-56" name="__codelineno-1-56" href="#__codelineno-1-56"></a><span class="cm"> */</span>
+<a id="__codelineno-1-57" name="__codelineno-1-57" href="#__codelineno-1-57"></a><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">class</span><span class="w"> </span><span class="nc">Index</span><span class="p">,</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">Shape</span><span class="o">&gt;</span>
+<a id="__codelineno-1-58" name="__codelineno-1-58" href="#__codelineno-1-58"></a><span class="n">CUTE_HOST_DEVICE</span><span class="w"> </span><span class="k">constexpr</span>
+<a id="__codelineno-1-59" name="__codelineno-1-59" href="#__codelineno-1-59"></a><span class="k">auto</span>
+<a id="__codelineno-1-60" name="__codelineno-1-60" href="#__codelineno-1-60"></a><span class="n">idx2crd</span><span class="p">(</span><span class="n">Index</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="n">idx</span><span class="p">,</span>
+<a id="__codelineno-1-61" name="__codelineno-1-61" href="#__codelineno-1-61"></a><span class="w">        </span><span class="n">Shape</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="n">shape</span><span class="p">)</span>
+<a id="__codelineno-1-62" name="__codelineno-1-62" href="#__codelineno-1-62"></a><span class="p">{</span>
+<a id="__codelineno-1-63" name="__codelineno-1-63" href="#__codelineno-1-63"></a><span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="p">(</span><span class="n">is_tuple</span><span class="o">&lt;</span><span class="n">Index</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-64" name="__codelineno-1-64" href="#__codelineno-1-64"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="p">(</span><span class="n">is_tuple</span><span class="o">&lt;</span><span class="n">Shape</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">      </span><span class="c1">// tuple tuple</span>
+<a id="__codelineno-1-65" name="__codelineno-1-65" href="#__codelineno-1-65"></a><span class="w">      </span><span class="k">static_assert</span><span class="p">(</span><span class="n">tuple_size</span><span class="o">&lt;</span><span class="n">Index</span><span class="o">&gt;::</span><span class="n">value</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">tuple_size</span><span class="o">&lt;</span><span class="n">Shape</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Mismatched Ranks&quot;</span><span class="p">);</span>
+<a id="__codelineno-1-66" name="__codelineno-1-66" href="#__codelineno-1-66"></a><span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">transform</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span><span class="w"> </span><span class="n">shape</span><span class="p">,</span><span class="w"> </span><span class="p">[](</span><span class="k">auto</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">idx2crd</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">s</span><span class="p">);</span><span class="w"> </span><span class="p">});</span>
+<a id="__codelineno-1-67" name="__codelineno-1-67" href="#__codelineno-1-67"></a><span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">                                     </span><span class="c1">// tuple &quot;int&quot;</span>
+<a id="__codelineno-1-68" name="__codelineno-1-68" href="#__codelineno-1-68"></a><span class="w">      </span><span class="k">static_assert</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">Index</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Invalid parameters&quot;</span><span class="p">);</span>
+<a id="__codelineno-1-69" name="__codelineno-1-69" href="#__codelineno-1-69"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-1-70" name="__codelineno-1-70" href="#__codelineno-1-70"></a><span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-71" name="__codelineno-1-71" href="#__codelineno-1-71"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="p">(</span><span class="n">is_tuple</span><span class="o">&lt;</span><span class="n">Shape</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">      </span><span class="c1">// &quot;int&quot; tuple</span>
+<a id="__codelineno-1-72" name="__codelineno-1-72" href="#__codelineno-1-72"></a><span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">transform_leaf</span><span class="p">(</span><span class="n">as_arithmetic_tuple</span><span class="p">(</span><span class="n">crd2idx</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span><span class="w"> </span><span class="n">shape</span><span class="p">,</span><span class="w"> </span><span class="n">make_basis_like</span><span class="p">(</span><span class="n">shape</span><span class="p">))),</span><span class="w"> </span><span class="n">identity</span><span class="p">{});</span>
+<a id="__codelineno-1-73" name="__codelineno-1-73" href="#__codelineno-1-73"></a><span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">                                     </span><span class="c1">// &quot;int&quot; &quot;int&quot;</span>
+<a id="__codelineno-1-74" name="__codelineno-1-74" href="#__codelineno-1-74"></a><span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">idx</span><span class="p">;</span>
+<a id="__codelineno-1-75" name="__codelineno-1-75" href="#__codelineno-1-75"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-1-76" name="__codelineno-1-76" href="#__codelineno-1-76"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-1-77" name="__codelineno-1-77" href="#__codelineno-1-77"></a><span class="p">}</span>
+</code></pre></div>
+<p>Layout 的构造也可以只提供 Shape，不提供 Stride。
+这时会按照 LayoutLeft （最里的维度在先，即 Column major）构造 Stride。
+具体实例可见下节。</p>
+<h3 id="layout-manipulation">Layout Manipulation<a class="headerlink" href="#layout-manipulation" title="Permanent link">&para;</a></h3>
+<h4 id="sublayouts">Sublayouts<a class="headerlink" href="#sublayouts" title="Permanent link">&para;</a></h4>
+<p>多层单点选取：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">Layout</span><span class="w"> </span><span class="n">a</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">Layout</span><span class="o">&lt;</span><span class="n">Shape</span><span class="o">&lt;</span><span class="n">_4</span><span class="p">,</span><span class="n">Shape</span><span class="o">&lt;</span><span class="n">_3</span><span class="p">,</span><span class="n">_6</span><span class="o">&gt;&gt;&gt;</span><span class="p">{};</span><span class="w"> </span><span class="c1">// (4,(3,6)):(1,(4,12))</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">Layout</span><span class="w"> </span><span class="n">a0</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">layout</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">(</span><span class="n">a</span><span class="p">);</span><span class="w">                     </span><span class="c1">// 4:1</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">Layout</span><span class="w"> </span><span class="n">a1</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">layout</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">(</span><span class="n">a</span><span class="p">);</span><span class="w">                     </span><span class="c1">// (3,6):(4,12)</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">Layout</span><span class="w"> </span><span class="n">a10</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">layout</span><span class="o">&lt;</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">(</span><span class="n">a</span><span class="p">);</span><span class="w">                   </span><span class="c1">// 3:4</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">Layout</span><span class="w"> </span><span class="n">a11</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">layout</span><span class="o">&lt;</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">(</span><span class="n">a</span><span class="p">);</span><span class="w">                   </span><span class="c1">// 6:12</span>
+</code></pre></div>
+<p>单层多点选取：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">Layout</span><span class="w"> </span><span class="n">a</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">Layout</span><span class="o">&lt;</span><span class="n">Shape</span><span class="o">&lt;</span><span class="n">_2</span><span class="p">,</span><span class="n">_3</span><span class="p">,</span><span class="n">_5</span><span class="p">,</span><span class="n">_7</span><span class="o">&gt;&gt;</span><span class="p">{};</span><span class="w">     </span><span class="c1">// (2,3,5,7):(1,2,6,30)</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">Layout</span><span class="w"> </span><span class="n">a13</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">select</span><span class="o">&lt;</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="o">&gt;</span><span class="p">(</span><span class="n">a</span><span class="p">);</span><span class="w">                   </span><span class="c1">// (3,7):(2,30)</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">Layout</span><span class="w"> </span><span class="n">a01</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">select</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="o">&gt;</span><span class="p">(</span><span class="n">a</span><span class="p">);</span><span class="w">                 </span><span class="c1">// (2,3,7):(1,2,30)</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">Layout</span><span class="w"> </span><span class="n">a2</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">select</span><span class="o">&lt;</span><span class="mi">2</span><span class="o">&gt;</span><span class="p">(</span><span class="n">a</span><span class="p">);</span><span class="w">                     </span><span class="c1">// (5):(6)</span>
+</code></pre></div>
+<p>单层范围选取：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">Layout</span><span class="w"> </span><span class="n">a</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">Layout</span><span class="o">&lt;</span><span class="n">Shape</span><span class="o">&lt;</span><span class="n">_2</span><span class="p">,</span><span class="n">_3</span><span class="p">,</span><span class="n">_5</span><span class="p">,</span><span class="n">_7</span><span class="o">&gt;&gt;</span><span class="p">{};</span><span class="w">     </span><span class="c1">// (2,3,5,7):(1,2,6,30)</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">Layout</span><span class="w"> </span><span class="n">a13</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">take</span><span class="o">&lt;</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="o">&gt;</span><span class="p">(</span><span class="n">a</span><span class="p">);</span><span class="w">                     </span><span class="c1">// (3,5):(2,6)</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">Layout</span><span class="w"> </span><span class="n">a14</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">take</span><span class="o">&lt;</span><span class="mi">1</span><span class="p">,</span><span class="mi">4</span><span class="o">&gt;</span><span class="p">(</span><span class="n">a</span><span class="p">);</span><span class="w">                     </span><span class="c1">// (3,5,7):(2,6,30)</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1">// take&lt;1,1&gt; not allowed. Empty layouts not allowed.</span>
+</code></pre></div>
+<h4 id="concatenation">Concatenation<a class="headerlink" href="#concatenation" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">Layout</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Layout</span><span class="o">&lt;</span><span class="n">_3</span><span class="p">,</span><span class="n">_1</span><span class="o">&gt;</span><span class="p">{};</span><span class="w">                     </span><span class="c1">// 3:1</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">Layout</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Layout</span><span class="o">&lt;</span><span class="n">_4</span><span class="p">,</span><span class="n">_3</span><span class="o">&gt;</span><span class="p">{};</span><span class="w">                     </span><span class="c1">// 4:3</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">Layout</span><span class="w"> </span><span class="n">row</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_layout</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">);</span><span class="w">                 </span><span class="c1">// (3,4):(1,3)</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">Layout</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_layout</span><span class="p">(</span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">);</span><span class="w">                 </span><span class="c1">// (4,3):(3,1)</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">Layout</span><span class="w"> </span><span class="n">q</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">make_layout</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="w"> </span><span class="n">col</span><span class="p">);</span><span class="w">             </span><span class="c1">// ((3,4),(4,3)):((1,3),(3,1))</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">Layout</span><span class="w"> </span><span class="n">aa</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">make_layout</span><span class="p">(</span><span class="n">a</span><span class="p">);</span><span class="w">                    </span><span class="c1">// (3):(1)</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">Layout</span><span class="w"> </span><span class="n">aaa</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_layout</span><span class="p">(</span><span class="n">aa</span><span class="p">);</span><span class="w">                   </span><span class="c1">// ((3)):((1))</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="n">Layout</span><span class="w"> </span><span class="n">d</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">make_layout</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">make_layout</span><span class="p">(</span><span class="n">a</span><span class="p">),</span><span class="w"> </span><span class="n">a</span><span class="p">);</span><span class="w"> </span><span class="c1">// (3,(3),3):(1,(1),1)</span>
+</code></pre></div>
+<h4 id="grouping-and-flattening">Grouping and Flattening<a class="headerlink" href="#grouping-and-flattening" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">Layout</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Layout</span><span class="o">&lt;</span><span class="n">Shape</span><span class="o">&lt;</span><span class="n">_2</span><span class="p">,</span><span class="n">_3</span><span class="p">,</span><span class="n">_5</span><span class="p">,</span><span class="n">_7</span><span class="o">&gt;&gt;</span><span class="p">{};</span><span class="w">  </span><span class="c1">// (_2,_3,_5,_7):(_1,_2,_6,_30)</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">Layout</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">group</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="o">&gt;</span><span class="p">(</span><span class="n">a</span><span class="p">);</span><span class="w">                 </span><span class="c1">// ((_2,_3),_5,_7):((_1,_2),_6,_30)</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">Layout</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">group</span><span class="o">&lt;</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="o">&gt;</span><span class="p">(</span><span class="n">b</span><span class="p">);</span><span class="w">                 </span><span class="c1">// ((_2,_3),(_5,_7)):((_1,_2),(_6,_30))</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">Layout</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">flatten</span><span class="p">(</span><span class="n">b</span><span class="p">);</span><span class="w">                    </span><span class="c1">// (_2,_3,_5,_7):(_1,_2,_6,_30)</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">Layout</span><span class="w"> </span><span class="n">e</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">flatten</span><span class="p">(</span><span class="n">c</span><span class="p">);</span><span class="w">                    </span><span class="c1">// (_2,_3,_5,_7):(_1,_2,_6,_30)</span>
+</code></pre></div>
+<h2 id="layout-algebra">Layout Algebra<a class="headerlink" href="#layout-algebra" title="Permanent link">&para;</a></h2>
+<h3 id="coalesce">Coalesce<a class="headerlink" href="#coalesce" title="Permanent link">&para;</a></h3>
+<p>Coalesce 操作是对 Layout 的简化。例如：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">auto</span><span class="w"> </span><span class="n">layout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Layout</span><span class="o">&lt;</span><span class="n">Shape</span><span class="w"> </span><span class="o">&lt;</span><span class="n">_2</span><span class="p">,</span><span class="n">Shape</span><span class="w"> </span><span class="o">&lt;</span><span class="n">_1</span><span class="p">,</span><span class="n">_6</span><span class="o">&gt;&gt;</span><span class="p">,</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">                     </span><span class="n">Stride</span><span class="o">&lt;</span><span class="n">_1</span><span class="p">,</span><span class="n">Stride</span><span class="o">&lt;</span><span class="n">_6</span><span class="p">,</span><span class="n">_2</span><span class="o">&gt;&gt;&gt;</span><span class="p">{};</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="k">auto</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coalesce</span><span class="p">(</span><span class="n">layout</span><span class="p">);</span><span class="w">    </span><span class="c1">// _12:_1</span>
+</code></pre></div>
+<p>考虑 Coalesce 一个两维的 Layout <code>(s0, s1):(d0, d1)</code>，存在四种情况：</p>
+<ol>
+<li><code>(s0, _1):(d0, d1) =&gt; s0:d0</code>，移除大小为 1 的维度</li>
+<li><code>(_1, s1):(d0, d1) =&gt; s1:d1</code>，移除大小为 1 的维度</li>
+<li><code>(s0, s1):(d0, s0*d0) =&gt; s0*s1:d0</code></li>
+<li>其他情况则无法合并</li>
+</ol>
+<p>支持按维度 Coalesce:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">auto</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Layout</span><span class="o">&lt;</span><span class="n">Shape</span><span class="w"> </span><span class="o">&lt;</span><span class="n">_2</span><span class="p">,</span><span class="n">Shape</span><span class="w"> </span><span class="o">&lt;</span><span class="n">_1</span><span class="p">,</span><span class="n">_6</span><span class="o">&gt;&gt;</span><span class="p">,</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">                </span><span class="n">Stride</span><span class="o">&lt;</span><span class="n">_1</span><span class="p">,</span><span class="n">Stride</span><span class="o">&lt;</span><span class="n">_6</span><span class="p">,</span><span class="n">_2</span><span class="o">&gt;&gt;&gt;</span><span class="p">{};</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="k">auto</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coalesce</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">Step</span><span class="o">&lt;</span><span class="n">_1</span><span class="p">,</span><span class="n">_1</span><span class="o">&gt;</span><span class="p">{});</span><span class="w">   </span><span class="c1">// (_2,_6):(_1,_2)</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1">// Identical to</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="k">auto</span><span class="w"> </span><span class="n">same_r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_layout</span><span class="p">(</span><span class="n">coalesce</span><span class="p">(</span><span class="n">layout</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">(</span><span class="n">a</span><span class="p">)),</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">                          </span><span class="n">coalesce</span><span class="p">(</span><span class="n">layout</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">(</span><span class="n">a</span><span class="p">)));</span>
+</code></pre></div>
+<h3 id="composition">Composition<a class="headerlink" href="#composition" title="Permanent link">&para;</a></h3>
+<p>既然 Layout 是从整数到整数的映射，我们可以复合两个 Layout 成一个新的 Layout，就像复合函数。</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1">// @post compatible(@a layout_b, @a result)</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="c1">// @post for all i, 0 &lt;= i &lt; size(@a layout_b), @a result(i) == @a layout_a(@a layout_b(i)))</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">Layout</span><span class="w"> </span><span class="n">composition</span><span class="p">(</span><span class="n">LayoutA</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="n">layout_a</span><span class="p">,</span><span class="w"> </span><span class="n">LayoutB</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="n">layout_b</span><span class="p">)</span>
+</code></pre></div>
+<p>也可以按维度复合：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1">// (12,(4,8)):(59,(13,1))</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="k">auto</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_layout</span><span class="p">(</span><span class="n">make_shape</span><span class="w"> </span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="n">make_shape</span><span class="w"> </span><span class="p">(</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="mi">8</span><span class="p">)),</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">                     </span><span class="n">make_stride</span><span class="p">(</span><span class="mi">59</span><span class="p">,</span><span class="n">make_stride</span><span class="p">(</span><span class="mi">13</span><span class="p">,</span><span class="mi">1</span><span class="p">)));</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="c1">// &lt;3:4, 8:2&gt;</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="k">auto</span><span class="w"> </span><span class="n">tiler</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_tile</span><span class="p">(</span><span class="n">Layout</span><span class="o">&lt;</span><span class="n">_3</span><span class="p">,</span><span class="n">_4</span><span class="o">&gt;</span><span class="p">{},</span><span class="w">  </span><span class="c1">// Apply 3:4 to mode-0</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">                       </span><span class="n">Layout</span><span class="o">&lt;</span><span class="n">_8</span><span class="p">,</span><span class="n">_2</span><span class="o">&gt;</span><span class="p">{});</span><span class="w"> </span><span class="c1">// Apply 8:2 to mode-1</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="c1">// (_3,(2,4)):(236,(26,1))</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="k">auto</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">composition</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">tiler</span><span class="p">);</span>
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="c1">// Identical to</span>
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="k">auto</span><span class="w"> </span><span class="n">same_r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_layout</span><span class="p">(</span><span class="n">composition</span><span class="p">(</span><span class="n">layout</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">(</span><span class="n">a</span><span class="p">),</span><span class="w"> </span><span class="n">get</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">(</span><span class="n">tiler</span><span class="p">)),</span>
+<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="w">                          </span><span class="n">composition</span><span class="p">(</span><span class="n">layout</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">(</span><span class="n">a</span><span class="p">),</span><span class="w"> </span><span class="n">get</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">(</span><span class="n">tiler</span><span class="p">)));</span>
+</code></pre></div>
+<h3 id="complement">Complement<a class="headerlink" href="#complement" title="Permanent link">&para;</a></h3>
+<p>一个 Layout 可以不是单射的，这时物理坐标的范围（codomain）会大于逻辑坐标的范围（domain）。
+Layouot 的补集 Complement 用来描述 codomain 中没被映射到的位置。</p>
+<ul>
+<li><code>complement(4:1, 24) =&gt; 6:4</code>，因为 <code>(4, 6):(1, 4)</code> 有 codomain 大小为 24</li>
+<li><code>complement(6:4, 24) =&gt; 6:4</code>，因为 <code>(6, 4):(4, 1)</code> 有 codomain 大小为 24</li>
+</ul>
+<p><img alt="Complement Example" src="complement1.png" /></p>
+<h3 id="division-tiling">Division (Tiling)<a class="headerlink" href="#division-tiling" title="Permanent link">&para;</a></h3>
+<p>Layout 的除法运算表示按照除数 Layout 对被除数 Layout 的划分。
+除法的结果是一个两维的 Layout。
+可以把除数 Layout 理解成 Tile 的 Layout，除法结果的第一维是 Tile 内的 Layout，第二维是被除数 Layout 中 Tile 间的 Layout。</p>
+<blockquote>
+<p>Layout 除法共有四种：logical, zipped, tiled, flat。下面先介绍的除法指的是 logical divide。</p>
+</blockquote>
+<p>具体的，先把被除数和除数 Layout 都展平成一维，除法结果 Layout 的每个 Tile 按照除数 Layout 的索引，在被除数中取值。
+可以参考下图中的例子：</p>
+<p><img alt="Divide Example 1" src="divide1.png" /></p>
+<p>实际上，我们可以给出上述除法的严格定义：</p>
+<div class="arithmatex">\[
+A / B := A \circ (B, B^*)
+\]</div>
+<p>A 与 B 的 logical divide，是 B 与 B 的补集 (complement) 的拼接 (concatenation)，再和 A 的复合 (composition)。</p>
+<p>考虑当 B 是一个单射时，有</p>
+<div class="arithmatex">\[
+A / B = A \circ (B, B^*) = (A \circ B, A \circ B^*)
+\]</div>
+<p>可以注意到结果的第一维是单个 Tile 内的 Layout，而第二维是被除数 A 中各个 Tile 的 Layout。</p>
+<p>上述的 logical divide 也可以扩展至多维，对每一维分别做一维的 logical divide。见下图：</p>
+<blockquote>
+<p>这里出现的尖括号 <code>B = &lt;3:3, (2,4):(1,8)&gt;</code> 表示 B 是一个 Tiler，用来代表运算是对每个维度分别操作的。</p>
+</blockquote>
+<p><img alt="2D Logical Divide" src="divide2.png" /></p>
+<p>前文提到，除了 logical divide，还有 zipped，tiled，flat divide 三种除法运算。
+这三种除法与 logical divide 的区别仅在于结果 layout 的排布：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>Layout Shape : (M, N, L, ...)
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>Tiler Shape  : &lt;TileM, TileN&gt;
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>logical_divide : ((TileM,RestM), (TileN,RestN), L, ...)
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>zipped_divide  : ((TileM,TileN), (RestM,RestN,L,...))
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>tiled_divide   : ((TileM,TileN), RestM, RestN, L, ...)
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>flat_divide    : (TileM, TileN, RestM, RestN, L, ...)
+</code></pre></div>
+<h3 id="product-tiling">Product (Tiling)<a class="headerlink" href="#product-tiling" title="Permanent link">&para;</a></h3>
+<p>有了除法之后，我们可以把乘法想象成除法的逆运算。
+除法是将一个大的 Layout 按照某种 Tiling 分块，乘法则是将小的分块 Layout 组合成整个 Layout。
+Logical product 的严格定义为：</p>
+<div class="arithmatex">\[
+A \otimes B = (A, A^* \circ B)
+\]</div>
+<p>A 与 B 的乘积有两维，第一维是 A 本身，第二维是 A 的补集和 B 的复合。
+以下是两个一维乘法的例子：</p>
+<p><img alt="1D Logical Product 1" src="product1.png" /></p>
+<p><img alt="1D Logical Product 2" src="product2.png" /></p>
+<p>从二维开始，logical product 变得反直觉了。
+在下图中，我们希望把 2x5 的 Tile 在列方向上重复 3 次，在行方向上重复 4 次。
+然而，这个操作所需的 B Layout 是 <code>&lt;3:5, 4:6&gt;</code>，这需要从 A 的 Layout 中推导出来，且并不直接。</p>
+<p><img alt="2D Logical Product" src="product2d.png" /></p>
+<p>CuTe 提供了 <code>blocked_product</code> 和 <code>raked_product</code>，来简化这样的乘法操作。</p>
+<p><img alt="Blocked Product" src="productblocked2d.png" /></p>
+<p>Blocked product 把 Layout A 连续的按照 Layout B 进行排布。</p>
+<p><img alt="Raked Product" src="productraked2d.png" /></p>
+<p>Raked product 把 Layout A 中每个元素按 Layout B 进行排布，再按 Layout A 进行排布。 </p>
 
 
 
