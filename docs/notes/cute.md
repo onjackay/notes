@@ -1,4 +1,4 @@
-# CuTe
+# CuTe Basic
 
 ## CuTe Layout
 
@@ -436,3 +436,80 @@ Blocked product 把 Layout A 连续的按照 Layout B 进行排布。
 ![Raked Product](cute/productraked2d.png)
 
 Raked product 把 Layout A 中每个元素按 Layout B 进行排布，再按 Layout A 进行排布。 
+
+## Tensor
+
+### Tensor Creation
+
+Tensor 的创建分为两种：
+
+1. 在已有的栈上数据（memory）上创建，Tensor 不拥有 memory。
+2. 在堆上创建静态大小的 memory，Tensor 拥有该 memory。
+
+```cpp
+// 栈上对象：需同时指定类型和Layout，layout必须是静态shape
+Tensor make_tensor<T>(Layout layout);
+
+// 堆上对象：需指定pointer和Layout，layout可动可静
+Tensor make_tensor(Pointer pointer, Layout layout);
+ 
+// 栈上对象，tensor的layout必须是静态的
+Tensor make_tensor_like(Tensor tensor); 
+
+// 栈上对象，tensor的layout必须是静态的
+Tensor make_fragment_like(Tensor tensor);
+```
+
+### Tensor Partition
+
+在 GPU 上，我们需要将一个 Tensor 划分成多个块，让每个 SM 每次处理一个块。
+例如，我们把一个大小为 [8, 24] 的 Tensor 划分成若干个大小为 [4, 8] 的块：
+
+```cpp
+Tensor A = make_tensor(ptr, make_shape(8,24));  // (8,24)
+auto tiler = Shape<_4,_8>{};                    // (_4,_8)
+
+Tensor tiled_a = zipped_divide(A, tiler);       // ((_4,_8),(2,3))
+```
+
+在 kernel 内可以根据 block ID 索引当前 SM 的数据：
+
+```cpp
+Tensor cta_a = tiled_a(make_coord(_,_), make_coord(blockIdx.x, blockIdx.y));  // (_4,_8)
+```
+
+这种索引方式也被封装进了 `inner_partition(Tensor, Tiler, Coord)` 或者 `local_tile(Tensor, Tiler, Coord)`。
+
+另外一种情况是，假设有 32 个线程，每个线程处理第一维中 (4, 8) 对应的某一块：
+
+```cpp
+Tensor thr_a = tiled_a(threadIdx.x, make_coord(_,_)); // (2,3)
+```
+
+也可以写成 `outer_partition(Tensor, Layout, Idx)` 或 `local_partition(Tensor, Layout, Idx)`。
+
+### Thread-Value partitioning
+
+假设我们有一个将线程映射到坐标的 Layout，
+我们可以将一个 Tensor 与这个 Layout 复合，构成能将线程映射到值的 Tensor。
+
+```cpp
+// Construct a TV-layout that maps 8 thread indices and 4 value indices
+//   to 1D coordinates within a 4x8 tensor
+// (T8,V4) -> (M4,N8)
+auto tv_layout = Layout<Shape <Shape <_2,_4>,Shape <_2, _2>>,
+                        Stride<Stride<_8,_1>,Stride<_4,_16>>>{}; // (8,4)
+
+// Construct a 4x8 tensor with any layout
+Tensor A = make_tensor<float>(Shape<_4,_8>{}, LayoutRight{});    // (4,8)
+// Compose A with the tv_layout to transform its shape and order
+Tensor tv = composition(A, tv_layout);                           // (8,4)
+// Slice so each thread has 4 values in the shape and order that the tv_layout prescribes
+Tensor  v = tv(threadIdx.x, _);                                  // (4)
+```
+
+## References
+
+https://github.com/NVIDIA/cutlass/blob/main/media/docs/cpp/cute/
+
+https://www.zhihu.com/people/reed-84-49/posts
