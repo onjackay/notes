@@ -16,7 +16,7 @@
         <link rel="prev" href="../quantization/">
       
       
-        <link rel="next" href="../../fire/theory/">
+        <link rel="next" href="../cute_detail/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -24,7 +24,7 @@
     
     
       
-        <title>CuTe - My Notes</title>
+        <title>CuTe Basic - My Notes</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#cute" class="md-skip">
+        <a href="#cute-basic" class="md-skip">
           Skip to content
         </a>
       
@@ -112,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              CuTe
+              CuTe Basic
             
           </span>
         </div>
@@ -496,6 +496,8 @@
       
         
       
+        
+      
     
     
     
@@ -671,7 +673,7 @@
   
   
   <span class="md-ellipsis">
-    CuTe
+    CuTe Basic
     
   </span>
   
@@ -684,7 +686,7 @@
   
   
   <span class="md-ellipsis">
-    CuTe
+    CuTe Basic
     
   </span>
   
@@ -850,10 +852,84 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#tensor" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tensor
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tensor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tensor-creation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tensor Creation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tensor-partition" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tensor Partition
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#thread-value-partitioning" class="md-nav__link">
+    <span class="md-ellipsis">
+      Thread-Value partitioning
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      References
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cute_detail/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    CuTe Detail
+    
+  </span>
+  
+
+      </a>
     </li>
   
 
@@ -983,7 +1059,7 @@
 
 
 
-<h1 id="cute">CuTe<a class="headerlink" href="#cute" title="Permanent link">&para;</a></h1>
+<h1 id="cute-basic">CuTe Basic<a class="headerlink" href="#cute-basic" title="Permanent link">&para;</a></h1>
 <h2 id="cute-layout">CuTe Layout<a class="headerlink" href="#cute-layout" title="Permanent link">&para;</a></h2>
 <p>Layout 用于描述 Tensor 在内存中的排布，提供了从逻辑坐标到物理坐标的映射。
 对于二维矩阵，我们可以简单的用 row-major 或 column-major 来描述其物理映射。
@@ -1339,6 +1415,60 @@ A \otimes B = (A, A^* \circ B)
 <p>Blocked product 把 Layout A 连续的按照 Layout B 进行排布。</p>
 <p><img alt="Raked Product" src="productraked2d.png" /></p>
 <p>Raked product 把 Layout A 中每个元素按 Layout B 进行排布，再按 Layout A 进行排布。 </p>
+<h2 id="tensor">Tensor<a class="headerlink" href="#tensor" title="Permanent link">&para;</a></h2>
+<h3 id="tensor-creation">Tensor Creation<a class="headerlink" href="#tensor-creation" title="Permanent link">&para;</a></h3>
+<p>Tensor 的创建分为两种：</p>
+<ol>
+<li>在已有的栈上数据（memory）上创建，Tensor 不拥有 memory。</li>
+<li>在堆上创建静态大小的 memory，Tensor 拥有该 memory。</li>
+</ol>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1">// 栈上对象：需同时指定类型和Layout，layout必须是静态shape</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="n">Tensor</span><span class="w"> </span><span class="n">make_tensor</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">Layout</span><span class="w"> </span><span class="n">layout</span><span class="p">);</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="c1">// 堆上对象：需指定pointer和Layout，layout可动可静</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="n">Tensor</span><span class="w"> </span><span class="nf">make_tensor</span><span class="p">(</span><span class="n">Pointer</span><span class="w"> </span><span class="n">pointer</span><span class="p">,</span><span class="w"> </span><span class="n">Layout</span><span class="w"> </span><span class="n">layout</span><span class="p">);</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="c1">// 栈上对象，tensor的layout必须是静态的</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="n">Tensor</span><span class="w"> </span><span class="nf">make_tensor_like</span><span class="p">(</span><span class="n">Tensor</span><span class="w"> </span><span class="n">tensor</span><span class="p">);</span><span class="w"> </span>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="c1">// 栈上对象，tensor的layout必须是静态的</span>
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="n">Tensor</span><span class="w"> </span><span class="nf">make_fragment_like</span><span class="p">(</span><span class="n">Tensor</span><span class="w"> </span><span class="n">tensor</span><span class="p">);</span>
+</code></pre></div>
+<h3 id="tensor-partition">Tensor Partition<a class="headerlink" href="#tensor-partition" title="Permanent link">&para;</a></h3>
+<p>在 GPU 上，我们需要将一个 Tensor 划分成多个块，让每个 SM 每次处理一个块。
+例如，我们把一个大小为 [8, 24] 的 Tensor 划分成若干个大小为 [4, 8] 的块：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">Tensor</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_tensor</span><span class="p">(</span><span class="n">ptr</span><span class="p">,</span><span class="w"> </span><span class="n">make_shape</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">24</span><span class="p">));</span><span class="w">  </span><span class="c1">// (8,24)</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="k">auto</span><span class="w"> </span><span class="n">tiler</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Shape</span><span class="o">&lt;</span><span class="n">_4</span><span class="p">,</span><span class="n">_8</span><span class="o">&gt;</span><span class="p">{};</span><span class="w">                    </span><span class="c1">// (_4,_8)</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="n">Tensor</span><span class="w"> </span><span class="n">tiled_a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">zipped_divide</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="n">tiler</span><span class="p">);</span><span class="w">       </span><span class="c1">// ((_4,_8),(2,3))</span>
+</code></pre></div>
+<p>在 kernel 内可以根据 block ID 索引当前 SM 的数据：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">Tensor</span><span class="w"> </span><span class="n">cta_a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tiled_a</span><span class="p">(</span><span class="n">make_coord</span><span class="p">(</span><span class="n">_</span><span class="p">,</span><span class="n">_</span><span class="p">),</span><span class="w"> </span><span class="n">make_coord</span><span class="p">(</span><span class="n">blockIdx</span><span class="p">.</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">blockIdx</span><span class="p">.</span><span class="n">y</span><span class="p">));</span><span class="w">  </span><span class="c1">// (_4,_8)</span>
+</code></pre></div>
+<p>这种索引方式也被封装进了 <code>inner_partition(Tensor, Tiler, Coord)</code> 或者 <code>local_tile(Tensor, Tiler, Coord)</code>。</p>
+<p>另外一种情况是，假设有 32 个线程，每个线程处理第一维中 (4, 8) 对应的某一块：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="n">Tensor</span><span class="w"> </span><span class="n">thr_a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tiled_a</span><span class="p">(</span><span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">make_coord</span><span class="p">(</span><span class="n">_</span><span class="p">,</span><span class="n">_</span><span class="p">));</span><span class="w"> </span><span class="c1">// (2,3)</span>
+</code></pre></div>
+<p>也可以写成 <code>outer_partition(Tensor, Layout, Idx)</code> 或 <code>local_partition(Tensor, Layout, Idx)</code>。</p>
+<h3 id="thread-value-partitioning">Thread-Value partitioning<a class="headerlink" href="#thread-value-partitioning" title="Permanent link">&para;</a></h3>
+<p>假设我们有一个将线程映射到坐标的 Layout，
+我们可以将一个 Tensor 与这个 Layout 复合，构成能将线程映射到值的 Tensor。</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1">// Construct a TV-layout that maps 8 thread indices and 4 value indices</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="c1">//   to 1D coordinates within a 4x8 tensor</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="c1">// (T8,V4) -&gt; (M4,N8)</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="k">auto</span><span class="w"> </span><span class="n">tv_layout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Layout</span><span class="o">&lt;</span><span class="n">Shape</span><span class="w"> </span><span class="o">&lt;</span><span class="n">Shape</span><span class="w"> </span><span class="o">&lt;</span><span class="n">_2</span><span class="p">,</span><span class="n">_4</span><span class="o">&gt;</span><span class="p">,</span><span class="n">Shape</span><span class="w"> </span><span class="o">&lt;</span><span class="n">_2</span><span class="p">,</span><span class="w"> </span><span class="n">_2</span><span class="o">&gt;&gt;</span><span class="p">,</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="w">                        </span><span class="n">Stride</span><span class="o">&lt;</span><span class="n">Stride</span><span class="o">&lt;</span><span class="n">_8</span><span class="p">,</span><span class="n">_1</span><span class="o">&gt;</span><span class="p">,</span><span class="n">Stride</span><span class="o">&lt;</span><span class="n">_4</span><span class="p">,</span><span class="n">_16</span><span class="o">&gt;&gt;&gt;</span><span class="p">{};</span><span class="w"> </span><span class="c1">// (8,4)</span>
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="c1">// Construct a 4x8 tensor with any layout</span>
+<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="n">Tensor</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_tensor</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="n">Shape</span><span class="o">&lt;</span><span class="n">_4</span><span class="p">,</span><span class="n">_8</span><span class="o">&gt;</span><span class="p">{},</span><span class="w"> </span><span class="n">LayoutRight</span><span class="p">{});</span><span class="w">    </span><span class="c1">// (4,8)</span>
+<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a><span class="c1">// Compose A with the tv_layout to transform its shape and order</span>
+<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a><span class="n">Tensor</span><span class="w"> </span><span class="n">tv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">composition</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="n">tv_layout</span><span class="p">);</span><span class="w">                           </span><span class="c1">// (8,4)</span>
+<a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a><span class="c1">// Slice so each thread has 4 values in the shape and order that the tv_layout prescribes</span>
+<a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a><span class="n">Tensor</span><span class="w">  </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tv</span><span class="p">(</span><span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">_</span><span class="p">);</span><span class="w">                                  </span><span class="c1">// (4)</span>
+</code></pre></div>
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<p>https://github.com/NVIDIA/cutlass/blob/main/media/docs/cpp/cute/</p>
+<p>https://www.zhihu.com/people/reed-84-49/posts</p>
 
 
 
