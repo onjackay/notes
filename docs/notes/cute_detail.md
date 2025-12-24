@@ -209,3 +209,41 @@ TiledMMA mma = make_tiled_mma(SM70_8x8x4_F32F16F16F32_NT{},
                               Layout<Shape<_1,_1,_1>>{},   // Layout of Atoms
                               Tile<_8,_8,_4>{});           // Tiler
 ```
+
+也可以将多个 MMA Atom 组成一个更大的 Tiled MMA。
+用四个 8 线程 8x8x4 的 MMA Atom 组成一个 32 线程 16x16x4 的 Tiled Atom：
+
+```cpp
+TiledMMA mma = make_tiled_mma(SM70_8x8x4_F32F16F16F32_NT{},
+                              Layout<Shape <_2,_2>,
+                                      Stride<_2,_1>>{});   // 2x2 n-major layout of Atoms
+print_latex(mma);
+```
+
+同样使用 32 线程，还可以进一步扩张到 32x32x4 的 Tiled Atom：
+
+```cpp
+TiledMMA mma = make_tiled_mma(SM70_8x8x4_F32F16F16F32_NT{},
+                              Layout<Shape <_2,_2>,
+                                      Stride<_2,_1>>{},  // 2x2 n-major layout of Atoms
+                              Tile<_32,_32,_4>{});      // 32x32x4 tiler
+print_latex(mma);
+```
+
+make_tiled_mma 的第二个参数表示参与 MMA Atom 线程/线程块的 Layout。
+第三个参数 PermuteMNK 表示整个 MMA 的大小和排布，这里 32x32 的 C 矩阵中，每个 16x16 的块都是上面的 16x16 Tiled MMA 的排布。
+但是，这会导致 AB 矩阵的读取不是连续排布的。
+M 维度上，第 0 个 MMA Atom 处理 M 维度上的第 0、2 个 8x8x4 的 MMA。
+我们会希望这个 MMA Atom 连续处理 M 维度上的第 0、1 个 8x8x4 的 MMA。
+因此，第三个参数 PermuteMNK 在 M 维度上进行了变化：
+
+```cpp
+TiledMMA mma = make_tiled_mma(SM70_8x8x4_F32F16F16F32_NT{},
+                              Layout<Shape <_2,_2>,
+                                      Stride<_2,_1>>{},       // 2x2 n-major layout of Atoms
+                              Tile<Layout<Shape <_4,_4,_2>,
+                                          Stride<_1,_8,_4>>, // Permutation on M, size 32
+                                    _32,                      // Permutation on N, size 32 identity
+                                    _4>{});                   // Permutation on K, size 4 identity
+print_latex(mma);
+```
