@@ -17,6 +17,7 @@ nav:
       - notes/quantization.md
       - notes/cute.md
       - notes/cute_detail.md
+      - notes/rmsnorm.md
   - FIRE:
       - fire/theory.md
   - About: 'https://onjackay.github.io/'
