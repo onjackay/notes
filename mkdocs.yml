@@ -8,6 +8,8 @@ edit_uri: ""
 nav:
   - Home: index.md
   - C++:
+      - cpp/ptx.md
+      - cpp/async-cuda.md
       - cpp/crtp.md
   - Notes:
       - notes/flash-attention.md
