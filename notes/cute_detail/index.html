@@ -16,7 +16,7 @@
         <link rel="prev" href="../cute/">
       
       
-        <link rel="next" href="../../fire/theory/">
+        <link rel="next" href="../rmsnorm/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -246,7 +246,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../cpp/crtp/" class="md-tabs__link">
+        <a href="../../cpp/ptx/" class="md-tabs__link">
           
   
   
@@ -405,6 +405,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -450,6 +454,52 @@
   
   
     <li class="md-nav__item">
+      <a href="../../cpp/ptx/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Parallel Thread Execution (PTX)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpp/async-cuda/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Asynchronous CUDA Programming
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../cpp/crtp/" class="md-nav__link">
         
   
@@ -483,6 +533,8 @@
   
     
     
+      
+        
       
         
       
@@ -786,6 +838,29 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rmsnorm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    RMSNorm
+    
+  </span>
+  
+
+      </a>
     </li>
   
 
@@ -1096,6 +1171,35 @@ ABC 的 Layout 是一个映射 <code>(T, V) -&gt; Idx</code>，将第 T 个逻�
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">TiledMMA</span><span class="w"> </span><span class="n">mma</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_tiled_mma</span><span class="p">(</span><span class="n">SM70_8x8x4_F32F16F16F32_NT</span><span class="p">{},</span>
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">                              </span><span class="n">Layout</span><span class="o">&lt;</span><span class="n">Shape</span><span class="o">&lt;</span><span class="n">_1</span><span class="p">,</span><span class="n">_1</span><span class="p">,</span><span class="n">_1</span><span class="o">&gt;&gt;</span><span class="p">{},</span><span class="w">   </span><span class="c1">// Layout of Atoms</span>
 <a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">                              </span><span class="n">Tile</span><span class="o">&lt;</span><span class="n">_8</span><span class="p">,</span><span class="n">_8</span><span class="p">,</span><span class="n">_4</span><span class="o">&gt;</span><span class="p">{});</span><span class="w">           </span><span class="c1">// Tiler</span>
+</code></pre></div>
+<p>也可以将多个 MMA Atom 组成一个更大的 Tiled MMA。
+用四个 8 线程 8x8x4 的 MMA Atom 组成一个 32 线程 16x16x4 的 Tiled Atom：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">TiledMMA</span><span class="w"> </span><span class="n">mma</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_tiled_mma</span><span class="p">(</span><span class="n">SM70_8x8x4_F32F16F16F32_NT</span><span class="p">{},</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">                              </span><span class="n">Layout</span><span class="o">&lt;</span><span class="n">Shape</span><span class="w"> </span><span class="o">&lt;</span><span class="n">_2</span><span class="p">,</span><span class="n">_2</span><span class="o">&gt;</span><span class="p">,</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">                                      </span><span class="n">Stride</span><span class="o">&lt;</span><span class="n">_2</span><span class="p">,</span><span class="n">_1</span><span class="o">&gt;&gt;</span><span class="p">{});</span><span class="w">   </span><span class="c1">// 2x2 n-major layout of Atoms</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">print_latex</span><span class="p">(</span><span class="n">mma</span><span class="p">);</span>
+</code></pre></div>
+<p>同样使用 32 线程，还可以进一步扩张到 32x32x4 的 Tiled Atom：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">TiledMMA</span><span class="w"> </span><span class="n">mma</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_tiled_mma</span><span class="p">(</span><span class="n">SM70_8x8x4_F32F16F16F32_NT</span><span class="p">{},</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">                              </span><span class="n">Layout</span><span class="o">&lt;</span><span class="n">Shape</span><span class="w"> </span><span class="o">&lt;</span><span class="n">_2</span><span class="p">,</span><span class="n">_2</span><span class="o">&gt;</span><span class="p">,</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">                                      </span><span class="n">Stride</span><span class="o">&lt;</span><span class="n">_2</span><span class="p">,</span><span class="n">_1</span><span class="o">&gt;&gt;</span><span class="p">{},</span><span class="w">  </span><span class="c1">// 2x2 n-major layout of Atoms</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">                              </span><span class="n">Tile</span><span class="o">&lt;</span><span class="n">_32</span><span class="p">,</span><span class="n">_32</span><span class="p">,</span><span class="n">_4</span><span class="o">&gt;</span><span class="p">{});</span><span class="w">      </span><span class="c1">// 32x32x4 tiler</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="n">print_latex</span><span class="p">(</span><span class="n">mma</span><span class="p">);</span>
+</code></pre></div>
+<p>make_tiled_mma 的第二个参数表示参与 MMA Atom 线程/线程块的 Layout。
+第三个参数 PermuteMNK 表示整个 MMA 的大小和排布，这里 32x32 的 C 矩阵中，每个 16x16 的块都是上面的 16x16 Tiled MMA 的排布。
+但是，这会导致 AB 矩阵的读取不是连续排布的。
+M 维度上，第 0 个 MMA Atom 处理 M 维度上的第 0、2 个 8x8x4 的 MMA。
+我们会希望这个 MMA Atom 连续处理 M 维度上的第 0、1 个 8x8x4 的 MMA。
+因此，第三个参数 PermuteMNK 在 M 维度上进行了变化：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">TiledMMA</span><span class="w"> </span><span class="n">mma</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_tiled_mma</span><span class="p">(</span><span class="n">SM70_8x8x4_F32F16F16F32_NT</span><span class="p">{},</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">                              </span><span class="n">Layout</span><span class="o">&lt;</span><span class="n">Shape</span><span class="w"> </span><span class="o">&lt;</span><span class="n">_2</span><span class="p">,</span><span class="n">_2</span><span class="o">&gt;</span><span class="p">,</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">                                      </span><span class="n">Stride</span><span class="o">&lt;</span><span class="n">_2</span><span class="p">,</span><span class="n">_1</span><span class="o">&gt;&gt;</span><span class="p">{},</span><span class="w">       </span><span class="c1">// 2x2 n-major layout of Atoms</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">                              </span><span class="n">Tile</span><span class="o">&lt;</span><span class="n">Layout</span><span class="o">&lt;</span><span class="n">Shape</span><span class="w"> </span><span class="o">&lt;</span><span class="n">_4</span><span class="p">,</span><span class="n">_4</span><span class="p">,</span><span class="n">_2</span><span class="o">&gt;</span><span class="p">,</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">                                          </span><span class="n">Stride</span><span class="o">&lt;</span><span class="n">_1</span><span class="p">,</span><span class="n">_8</span><span class="p">,</span><span class="n">_4</span><span class="o">&gt;&gt;</span><span class="p">,</span><span class="w"> </span><span class="c1">// Permutation on M, size 32</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">                                    </span><span class="n">_32</span><span class="p">,</span><span class="w">                      </span><span class="c1">// Permutation on N, size 32 identity</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="w">                                    </span><span class="n">_4</span><span class="o">&gt;</span><span class="p">{});</span><span class="w">                   </span><span class="c1">// Permutation on K, size 4 identity</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="n">print_latex</span><span class="p">(</span><span class="n">mma</span><span class="p">);</span>
 </code></pre></div>
 
 
