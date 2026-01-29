@@ -1,5 +1,16 @@
 # Asynchronous CUDA Programming
 
+## LDGSTS
+
+> [4.11.1. Using LDGSTS](https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/async-copies.html#using-ldgsts)
+
+从 cc80 开始，LDGSTS (Load GMEM Store SMEM) 指令异步的从 GMEM 拷贝到 SMEM，支持拷贝 4，8，16 字节的数据。
+拷贝 4 或 8 字节使用 L1 ACCESS mode，数据会存在于 L1 Cache 中。
+拷贝 16 字节时启用 L1 BYPASS mode，L1 Cache 不会被污染。
+
+**异步性**：LDGSTS 是一个 Async thread，可以使用 Shared memory barrier 或 pipeline 来获取完成信号。
+完成信号的范围是单个线程，需要 `__syncthreads()` 才能看到其他线程用 LDGSTS 读取的数据。
+
 ## Asynchronous Barrier
 
 > [10.26 Asynchronous Barrier](https://docs.nvidia.com/cuda/cuda-c-programming-guide/#asynchronous-barrier)
