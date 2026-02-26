@@ -12,6 +12,7 @@ nav:
       - cpp/async-cuda.md
       - cpp/crtp.md
   - Notes:
+      - notes/fused_moe.md
       - notes/flash-attention.md
       - notes/mla.md
       - notes/vllm.md
@@ -20,6 +21,7 @@ nav:
       - notes/cute.md
       - notes/cute_detail.md
       - notes/rmsnorm.md
+      - notes/l40.md
   - FIRE:
       - fire/theory.md
   - About: 'https://onjackay.github.io/'
