@@ -13,10 +13,10 @@
       
       
       
-        <link rel="prev" href="../..">
+        <link rel="prev" href="../rmsnorm/">
       
       
-        <link rel="next" href="../async-cuda/">
+        <link rel="next" href="../../fire/theory/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -24,7 +24,7 @@
     
     
       
-        <title>Parallel Thread Execution (PTX) - My Notes</title>
+        <title>L40 Experiments - My Notes</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#parallel-thread-execution-ptx" class="md-skip">
+        <a href="#l40-experiments" class="md-skip">
           Skip to content
         </a>
       
@@ -112,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Parallel Thread Execution (PTX)
+              L40 Experiments
             
           </span>
         </div>
@@ -242,13 +242,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../cpp/ptx/" class="md-tabs__link">
           
   
   
@@ -266,11 +264,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../notes/fused_moe/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../fused_moe/" class="md-tabs__link">
           
   
   
@@ -398,10 +398,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -415,22 +413,21 @@
     
     
       
-        
-        
-      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
             
   
   
@@ -443,7 +440,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             C++
@@ -454,32 +451,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    Parallel Thread Execution (PTX)
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../cpp/ptx/" class="md-nav__link">
         
   
   
@@ -490,50 +465,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#9712-synchronization-and-communication" class="md-nav__link">
-    <span class="md-ellipsis">
-      9.7.12 Synchronization and Communication
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="9.7.12 Synchronization and Communication">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#971213-griddepcontrol" class="md-nav__link">
-    <span class="md-ellipsis">
-      9.7.12.13 griddepcontrol
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -546,7 +477,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../async-cuda/" class="md-nav__link">
+      <a href="../../cpp/async-cuda/" class="md-nav__link">
         
   
   
@@ -569,7 +500,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../crtp/" class="md-nav__link">
+      <a href="../../cpp/crtp/" class="md-nav__link">
         
   
   
@@ -596,8 +527,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -625,21 +558,22 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   
@@ -652,7 +586,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             Notes
@@ -666,7 +600,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notes/fused_moe/" class="md-nav__link">
+      <a href="../fused_moe/" class="md-nav__link">
         
   
   
@@ -689,7 +623,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notes/flash-attention/" class="md-nav__link">
+      <a href="../flash-attention/" class="md-nav__link">
         
   
   
@@ -712,7 +646,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notes/mla/" class="md-nav__link">
+      <a href="../mla/" class="md-nav__link">
         
   
   
@@ -735,7 +669,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notes/vllm/" class="md-nav__link">
+      <a href="../vllm/" class="md-nav__link">
         
   
   
@@ -758,7 +692,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notes/papers/" class="md-nav__link">
+      <a href="../papers/" class="md-nav__link">
         
   
   
@@ -781,7 +715,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notes/quantization/" class="md-nav__link">
+      <a href="../quantization/" class="md-nav__link">
         
   
   
@@ -804,7 +738,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notes/cute/" class="md-nav__link">
+      <a href="../cute/" class="md-nav__link">
         
   
   
@@ -827,7 +761,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notes/cute_detail/" class="md-nav__link">
+      <a href="../cute_detail/" class="md-nav__link">
         
   
   
@@ -850,7 +784,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notes/rmsnorm/" class="md-nav__link">
+      <a href="../rmsnorm/" class="md-nav__link">
         
   
   
@@ -870,10 +804,32 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../notes/l40/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    L40 Experiments
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -884,6 +840,68 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#nvidia-l40-gpu-datasheet" class="md-nav__link">
+    <span class="md-ellipsis">
+      NVIDIA L40 GPU Datasheet
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cutlass-exmamples" class="md-nav__link">
+    <span class="md-ellipsis">
+      CUTLASS Exmamples
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CUTLASS Exmamples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tf32-gemm" class="md-nav__link">
+    <span class="md-ellipsis">
+      TF32 GEMM
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fp8-gemm" class="md-nav__link">
+    <span class="md-ellipsis">
+      FP8 GEMM
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1013,69 +1031,48 @@
 
 
 
-<h1 id="parallel-thread-execution-ptx">Parallel Thread Execution (PTX)<a class="headerlink" href="#parallel-thread-execution-ptx" title="Permanent link">&para;</a></h1>
-<h2 id="9712-synchronization-and-communication">9.7.12 Synchronization and Communication<a class="headerlink" href="#9712-synchronization-and-communication" title="Permanent link">&para;</a></h2>
-<h3 id="971213-griddepcontrol">9.7.12.13 griddepcontrol<a class="headerlink" href="#971213-griddepcontrol" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>griddepcontrol.action;
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>.action   = { .launch_dependents, .wait }
+<h1 id="l40-experiments">L40 Experiments<a class="headerlink" href="#l40-experiments" title="Permanent link">&para;</a></h1>
+<h2 id="nvidia-l40-gpu-datasheet">NVIDIA L40 GPU Datasheet<a class="headerlink" href="#nvidia-l40-gpu-datasheet" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Arch: Ada SM89</li>
+<li>GMEM: 48GB</li>
+<li>SMEM: 0, 8, 16, 32, 64, 100 KB</li>
+<li>Memory Bandwidth: 864 GB/s</li>
+<li>SMs: 142</li>
+<li>FP32 CUDA Core: 90.5 TFLOPS</li>
+<li>TF32 Tensor Core: 90.5 TFLOPS</li>
+<li>FP16/BF16 Tensor Core: 181.05 TFLOPS, Shape: 16x8x16</li>
+<li>FP8/INT8 Tensor Core: 362 TFLOPS</li>
+<li>INT4 Tensor Core: 724 TOPS</li>
+</ul>
+<h2 id="cutlass-exmamples">CUTLASS Exmamples<a class="headerlink" href="#cutlass-exmamples" title="Permanent link">&para;</a></h2>
+<h3 id="tf32-gemm">TF32 GEMM<a class="headerlink" href="#tf32-gemm" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>./examples/14_ampere_tf32_tensorop_gemm/14_ampere_tf32_tensorop_gemm
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>5120 x 4096 x 4096 TF32 tensor op Matrix Multiply
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>Runtime: 2.20095 ms
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a> GFLOPs: 78056.7
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>Passed
 </code></pre></div>
-<p>The griddepcontrol instruction allows the dependent grids and prerequisite grids as defined by the runtime, to control execution in the following way:</p>
-<p><code>.launch_dependents</code> modifier signals that specific dependents the runtime system designated to react to this instruction can be scheduled as soon as all other CTAs in the grid issue the same instruction or have completed. The dependent may launch before the completion of the current grid. There is no guarantee that the dependent will launch before the completion of the current grid. Repeated invocations of this instruction by threads in the current CTA will have no additional side effects past that of the first invocation.</p>
-<p><code>.wait</code> modifier causes the executing thread to wait until all prerequisite grids in flight have completed and all the memory operations from the prerequisite grids are performed and made visible to the current grid.</p>
-<p>使用这两条 ptx 指令的目的是启用 <a href="https://docs.nvidia.com/cuda/cuda-programming-guide/03-advanced/advanced-host-programming.html#programmatic-dependent-kernel-launch">PDL (Programmatic Dependent Kernel Launch)</a>。
-使得同一个 stream 中，前后两个有依赖关系，但仍有可重叠部分的 kernel，可以一部分重叠。
-需要 SM90 及以上 CC。
-例如以下例子：</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">primary_kernel</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span><span class="c1">// Initial work that should finish before starting secondary kernel</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="c1">// Trigger the secondary kernel</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="n">cudaTriggerProgrammaticLaunchCompletion</span><span class="p">();</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span><span class="c1">// Work that can coincide with the secondary kernel</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="p">}</span>
+<p>MFU = 84.2\%</p>
+<h3 id="fp8-gemm">FP8 GEMM<a class="headerlink" href="#fp8-gemm" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>./examples/58_ada_fp8_gemm/58_ada_fp8_gemm --m=5120 --n=4096 --k=4096
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>Running GEMM with staged accumulation (OpMultiplyAdd)
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>=====================================================
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>Skipped reference check
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>Problem size: 5120x4096x4096
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>Runtime (ms): 0.589773
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>GFLOPs/sec:   291296
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>Passed
 <a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">secondary_kernel</span><span class="p">()</span>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="p">{</span>
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">    </span><span class="c1">// Initialization, Independent work, etc.</span>
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">    </span><span class="c1">// Will block until all primary kernels the secondary kernel is dependent on have</span>
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">    </span><span class="c1">// completed and flushed results to global memory</span>
-<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="w">    </span><span class="n">cudaGridDependencySynchronize</span><span class="p">();</span>
-<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>
-<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">    </span><span class="c1">// Dependent work</span>
-<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="p">}</span>
-<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>
-<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="c1">// Launch the secondary kernel with the special attribute</span>
-<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>
-<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="c1">// Set Up the attribute</span>
-<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="n">cudaLaunchAttribute</span><span class="w"> </span><span class="n">attribute</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>
-<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="n">attribute</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cudaLaunchAttributeProgrammaticStreamSerialization</span><span class="p">;</span>
-<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="n">attribute</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">val</span><span class="p">.</span><span class="n">programmaticStreamSerializationAllowed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
-<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>
-<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="c1">// Set the attribute in a kernel launch configuration</span>
-<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="w"> </span><span class="n">cudaLaunchConfig_t</span><span class="w"> </span><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">};</span>
-<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>
-<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="c1">// Base launch configuration</span>
-<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a><span class="n">config</span><span class="p">.</span><span class="n">gridDim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">grid_dim</span><span class="p">;</span>
-<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="n">config</span><span class="p">.</span><span class="n">blockDim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">block_dim</span><span class="p">;</span>
-<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a><span class="n">config</span><span class="p">.</span><span class="n">dynamicSmemBytes</span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
-<a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a><span class="n">config</span><span class="p">.</span><span class="n">stream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">stream</span><span class="p">;</span>
-<a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a>
-<a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a><span class="c1">// Add special attribute for PDL</span>
-<a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a><span class="n">config</span><span class="p">.</span><span class="n">attrs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">attribute</span><span class="p">;</span>
-<a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a><span class="n">config</span><span class="p">.</span><span class="n">numAttrs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
-<a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a>
-<a id="__codelineno-1-41" name="__codelineno-1-41" href="#__codelineno-1-41"></a><span class="c1">// Launch primary kernel</span>
-<a id="__codelineno-1-42" name="__codelineno-1-42" href="#__codelineno-1-42"></a><span class="n">primary_kernel</span><span class="o">&lt;&lt;&lt;</span><span class="n">grid_dim</span><span class="p">,</span><span class="w"> </span><span class="n">block_dim</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">stream</span><span class="o">&gt;&gt;&gt;</span><span class="p">();</span>
-<a id="__codelineno-1-43" name="__codelineno-1-43" href="#__codelineno-1-43"></a>
-<a id="__codelineno-1-44" name="__codelineno-1-44" href="#__codelineno-1-44"></a><span class="c1">// Launch secondary (dependent) kernel using the configuration with</span>
-<a id="__codelineno-1-45" name="__codelineno-1-45" href="#__codelineno-1-45"></a><span class="c1">// the attribute</span>
-<a id="__codelineno-1-46" name="__codelineno-1-46" href="#__codelineno-1-46"></a><span class="n">cudaLaunchKernelEx</span><span class="p">(</span><span class="o">&amp;</span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">secondary_kernel</span><span class="p">);</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>Running GEMM with fast accumulation (OpMultiplyAddFastAccum)
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>============================================================
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>Skipped reference check
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>Problem size: 5120x4096x4096
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>Runtime (ms): 0.547277
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>GFLOPs/sec:   313916
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>Passed
 </code></pre></div>
-<p><code>cudaGridDependencySynchronize()</code> 函数封装的就是 <code>griddepcontrol.wait</code> 指令，等待第一个 kernel 被依赖的部分执行完成。
-<code>cudaTriggerProgrammaticLaunchCompletion()</code> 函数封装的是 <code>griddepcontrol.launch_dependents</code> 指令，提示第二个 kernel 可以往下运行。</p>
+<p>MFU = 84.6\%</p>
 
 
 

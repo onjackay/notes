@@ -270,7 +270,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../notes/flash-attention/" class="md-tabs__link">
+        <a href="../../notes/fused_moe/" class="md-tabs__link">
           
   
   
@@ -530,6 +530,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#ldgsts" class="md-nav__link">
+    <span class="md-ellipsis">
+      LDGSTS
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#asynchronous-barrier" class="md-nav__link">
     <span class="md-ellipsis">
       Asynchronous Barrier
@@ -626,6 +635,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -663,6 +676,29 @@
             Notes
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notes/fused_moe/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Fused MoE Kernels
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -848,6 +884,29 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notes/l40/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    L40 Experiments
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -973,6 +1032,15 @@
 
 
 <h1 id="asynchronous-cuda-programming">Asynchronous CUDA Programming<a class="headerlink" href="#asynchronous-cuda-programming" title="Permanent link">&para;</a></h1>
+<h2 id="ldgsts">LDGSTS<a class="headerlink" href="#ldgsts" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p><a href="https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/async-copies.html#using-ldgsts">4.11.1. Using LDGSTS</a></p>
+</blockquote>
+<p>从 cc80 开始，LDGSTS (Load GMEM Store SMEM) 指令异步的从 GMEM 拷贝到 SMEM，支持拷贝 4，8，16 字节的数据。
+拷贝 4 或 8 字节使用 L1 ACCESS mode，数据会存在于 L1 Cache 中。
+拷贝 16 字节时启用 L1 BYPASS mode，L1 Cache 不会被污染。</p>
+<p><strong>异步性</strong>：LDGSTS 是一个 Async thread，可以使用 Shared memory barrier 或 pipeline 来获取完成信号。
+完成信号的范围是单个线程，需要 <code>__syncthreads()</code> 才能看到其他线程用 LDGSTS 读取的数据。</p>
 <h2 id="asynchronous-barrier">Asynchronous Barrier<a class="headerlink" href="#asynchronous-barrier" title="Permanent link">&para;</a></h2>
 <blockquote>
 <p><a href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/#asynchronous-barrier">10.26 Asynchronous Barrier</a></p>
