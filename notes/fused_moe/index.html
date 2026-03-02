@@ -787,6 +787,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#w8a8" class="md-nav__link">
+    <span class="md-ellipsis">
+      W8A8
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1950,6 +1959,21 @@ matmul_ops 根据每个专家平均被路由到的 Token 个数来决定 Block_M
 </code></pre></div>
 <p>在 BS&lt;=2048 时，cutlass_moe 与 sgl fused_moe 性能没有明显差异。
 在 BS&gt;=4096 时，cutlass_moe 的性能是比 sgl fused_moe 差的，比 triton_kernels 就更差一截了。</p>
+<h2 id="w8a8">W8A8<a class="headerlink" href="#w8a8" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>======================================================================
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>FINAL SUMMARY - FP8 Weights + FP8 Activations (Per-block + Per-token)
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>======================================================================
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>Batch Size   SGLang (ms)     Relative Error
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>----------------------------------------------------------------------
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>16           0.632           0.3474
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>64           0.949           0.4145
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>256          1.020           0.5104
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>1024         1.198           0.5308
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>2048         1.462           0.5052
+<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>4096         2.013           0.5928
+<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>8192         3.831           0.5825
+<a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a>======================================================================
+</code></pre></div>
 
 
 
