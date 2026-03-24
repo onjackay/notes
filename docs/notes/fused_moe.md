@@ -55,6 +55,13 @@ From `moe_kernel_features.md` in v0.15.0:
 | deepep_low_latency,</br>pplx | `DeepEPLLPrepareAndFinalize`,</br>`PplxPrepareAndFinalize` |  `BatchedDeepGemmExperts`,</br>`BatchedTritonExperts`,</br>`CutlassBatchedExpertsFp8`,</br>`BatchedMarlinExperts` |
 | flashinfer | `FlashInferCutlassMoEPrepareAndFinalize` | `FlashInferExperts` |
 
+## DeepGEMM
+
+### Continuous & Masked
+
+**Grouped:** A 的形状为 `(m, k)`，m 维度每个 group align 到 blocksize。For Prefill + DeepEP Normal Mode
+**Masked:** A 的形状为 `(num_groups, max_m, k)`。For Decode + DeepEP Low Latency Mode (with CUDA Graph)
+
 ## Profile
 
 - 1x L40 GPU
@@ -471,3 +478,41 @@ Batch Size   Triton (ms)     SGLang (ms)     FlashInf (ms)   T/Sgl      F/Sgl
 
 在 BS<=2048 时，cutlass_moe 与 sgl fused_moe 性能没有明显差异。
 在 BS>=4096 时，cutlass_moe 的性能是比 sgl fused_moe 差的，比 triton_kernels 就更差一截了。
+
+## W16A16 on 5090
+
+```
+==================================================
+BENCHMARK SUMMARY
+==================================================
+Parameters: N=2048, K=768, num_experts=128, top_k=8
+
+M	Avg Time (ms)	Std Dev (ms)
+--------------------------------------------------
+16		    0.480		0.005
+64		    0.748		0.002
+256		    1.052		0.004
+1024		1.082		0.003
+4096		1.814		0.008
+8192		3.439		0.019
+```
+
+## W8A8
+
+On L40:
+
+```
+======================================================================
+FINAL SUMMARY - FP8 Weights + FP8 Activations (Per-block + Per-token)
+======================================================================
+Batch Size   SGLang (ms)     Relative Error
+----------------------------------------------------------------------
+16           0.632           0.3474
+64           0.949           0.4145
+256          1.020           0.5104
+1024         1.198           0.5308
+2048         1.462           0.5052
+4096         2.013           0.5928
+8192         3.831           0.5825
+======================================================================
+```

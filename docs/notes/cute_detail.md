@@ -247,3 +247,229 @@ TiledMMA mma = make_tiled_mma(SM70_8x8x4_F32F16F16F32_NT{},
                                     _4>{});                   // Permutation on K, size 4 identity
 print_latex(mma);
 ```
+
+## CuTe GEMM Example
+
+### MMA
+
+使用 `SM80_16x8x16_F32BF16BF16F32_TN`，对应 `mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32`。
+A 矩阵的 layout 如下图：
+
+![mma.m16n8k16 A Layout](cute_detail/mma-16816-A-f16.png)
+
+B 矩阵的 layout：
+
+![mma.m16n8k16 B Layout](cute_detail/mma-16816-B-f16.png)
+
+A 用 TV layout 表示为 `((4, 8), (2, 2, 2)) : ((32, 1), (16, 8, 16))`，
+B 用 TV layout 表示为 `((4, 8), (2, 2) : (16, 1), (8, 64))`。
+这里的 layout 需要转置才能得到，为什么？
+这里 stride 为 1 恰恰不为连续，反而是跨过了一个最低的维度。
+
+我们使用 4 个 warp，组成一个 32x32x16 的 TiledMMA，这时每个 warp 发起两个 mma 指令：
+
+![tiled_mma.m32n32k16.bf16](cute_detail/tiled_mma.png)
+
+构造一个 5120x5120x4096 的 GEMM，A 和 B 都是 K-major，SMEM 的 Tile shape 为 128x128x16。
+在一个 tiled_mma 内，MMA 在 N 维度上需要循环重复 2 次。
+在一个 block tile 内，tiled_mma 要在 M 维度上重复 4 次，在 N 维度上重复 4 次。
+打印 tiled_mma 一个线程在 GMEM 上的划分 Layout：
+
+```
+tCgA: gmem_ptr[16b](0x7bb46e000000) o ((_2,_2,_2),_4,_1,256):((_1,32768,_8),131072,_0,_16)
+tCgB: gmem_ptr[16b](0x7bb468000000) o ((_2,_2),(_2,_4),_1,256):((_1,_8),(65536,131072),_0,_16)
+tCgC: gmem_ptr[32b](0x7bb428000000) o ((_2,_2),_4,_8):((_1,40960),163840,_16)
+```
+
+tCgA 的 MMA 维度有 8 个元素，在 M 维度上重复 4 次。
+tCgB 的 MMA 维度有 4 个元素，在 M 维度上重复 8 次。
+tCgC 的 MMA 维度有 4 个元素，在 M 维度上重复 4 次，在 N 维度上重复 8 次。
+符合预期。
+
+### S2R Copy
+
+使用 `SM75_U32x4_LDSM_N` 这个 CopyAtom，对应 `ldmatrix.sync.aligned.x4.m8n8.shared.b16`。
+这样一个指令拷贝大小 32x8 的矩阵，每个线程拿到 8 个元素。
+但实际上，我们看作是拷贝了一块大小为 16x16 的矩阵，让 k 方向与 mma 的 k 大小对齐。
+这样，对于左半 16x8 的矩阵，我们让线程 0-15 读取。对于右半 16x8 的矩阵，让线程 16-31 读取。 
+
+对于 A，一次拷贝正好满足一次 MMA 所需的元素。
+对于 B，一次拷贝能满足两次 MMA 所需的元素，恰好等于做一次 tiled_mma。
+
+![ldmatrix.x4.m8n8.b16](cute_detail/s2r_tiled_copy_a.png)
+
+可以发现，这时存在 bank conflict：
+每行 16 个元素即 32 bytes，则每 4 行间隔 128 bytes。
+线程 0 和线程 4 存在 bank conflict
+
+一个 tiled_copy 包含 2 个 warp，拷贝大小为 32x16 的矩阵，符合一次 tiled_mma 的大小。
+
+打印 s2r copy 一个线程在 SMEM 和 RMEM 上的划分 Layout：
+
+```
+tXsA: ptr[16b](0x7bb500000400) o ((_8,_1),_4,_1,_2):((_1,_0),_512,_0,_2048)
+tXrA: ptr[16b](0x7bb4adfffba0) o ((_8,_1),_4,_1):((_1,_0),_8,_0)
+tXsB: ptr[16b](0x7bb500002400) o ((_8,_1),_4,_1,_2):((_1,_0),_512,_0,_2048)
+tXrB: ptr[16b](0x7bb4adfffbe0) o ((_8,_1),_4,_1):((_1,_0),_8,_0)
+```
+
+A 和 B 在 Copy 维度上都有 8 个元素，对应一次 tiled_mma。
+A 在 M 维度上重复 4 次，B 在 N 维度上重复 4 次，对应了整个 tile block 上的 mma。
+
+---
+
+---
+
+bf16 on sm120
+5120 x 5120 x 4096
+
+### 1
+
+bM, bN, bK = 128, 128, 16
+g2s: cp.async
+s2r: ldmatrix.x4
+single-stage
+
+GEMM average time over 10 iterations: 1.7016 ms
+GEMM average throughput over 10 iterations: 100965.9084 GFLOPS
+
+```
+TiledMma: TiledMMA
+  ThrLayoutVMNK:  (_32,_2,_4,_1):(_1,_32,_64,_0)
+  PermutationMNK: (_128,_128,_16)
+MMA_Atom
+  ThrID:      _32:_1
+  Shape_MNK:  (_16,_8,_16)
+  LayoutA_TV: ((_4,_8),(_2,_2,_2)):((_32,_1),(_16,_8,_128))
+  LayoutB_TV: ((_4,_8),(_2,_2)):((_16,_1),(_8,_64))
+  LayoutC_TV: ((_4,_8),(_2,_2)):((_32,_1),(_16,_8))
+
+copyA: TiledCopy
+  Tiler_MN:       (_128,_16)
+  TiledLayout_TV: ((_2,_128),_8):((_1024,_1),_128)
+Copy_Atom
+  ThrID:        _1:_0
+  ValLayoutSrc: (_1,_8):(_0,_1)
+  ValLayoutDst: (_1,_8):(_0,_1)
+  ValLayoutRef: (_1,_8):(_0,_1)
+  ValueType:    16b
+
+copyB: TiledCopy
+  Tiler_MN:       (_128,_16)
+  TiledLayout_TV: ((_2,_128),_8):((_1024,_1),_128)
+Copy_Atom
+  ThrID:        _1:_0
+  ValLayoutSrc: (_1,_8):(_0,_1)
+  ValLayoutDst: (_1,_8):(_0,_1)
+  ValLayoutRef: (_1,_8):(_0,_1)
+  ValueType:    16b
+
+s2r_atom_A: Copy_Atom
+  ThrID:        _32:_1
+  ValLayoutSrc: (_32,_8):(_8,_1)
+  ValLayoutDst: (_32,(_2,_4)):(_2,(_1,_64))
+  ValLayoutRef: (_32,(_2,_4)):(_2,(_1,_64))
+  ValueType:    16b
+
+s2r_atom_B: Copy_Atom
+  ThrID:        _32:_1
+  ValLayoutSrc: (_32,_8):(_8,_1)
+  ValLayoutDst: (_32,(_2,_4)):(_2,(_1,_64))
+  ValLayoutRef: (_32,(_2,_4)):(_2,(_1,_64))
+  ValueType:    16b
+
+gA: gmem_ptr[16b](0x7a3346000000) o (_128,_16,256):(4096,_1,_16)
+gB: gmem_ptr[16b](0x7a3340000000) o (_128,_16,256):(4096,_1,_16)
+gC: gmem_ptr[32b](0x7a3300000000) o (_128,_128):(5120,_1)
+sA: ptr[16b](0x7a3400000400) o (_128,_16):(_16,_1)
+tAgA: gmem_ptr[16b](0x7a3346000000) o ((_8,_1),_1,_1,256):((_1,_0),_0,_0,_16)
+tAsA: ptr[16b](0x7a3400000400) o ((_8,_1),_1,_1):((_1,_0),_0,_0)
+
+sB: ptr[16b](0x7a3400001400) o (_128,_16):(_16,_1)
+tAgB: gmem_ptr[16b](0x7a3340000000) o ((_8,_1),_1,_1,256):((_1,_0),_0,_0,_16)
+tAsB: ptr[16b](0x7a3400001400) o ((_8,_1),_1,_1):((_1,_0),_0,_0)
+
+tXsA: ptr[16b](0x7a3400000400) o ((_8,_4),_1,_1):((_1,_512),_0,_0)
+tXrA: ptr[16b](0x7a3385fffbd0) o ((_8,_4),_1,_1):((_1,_8),_0,_0)
+tXsB: ptr[16b](0x7a3400001400) o ((_8,_2),_1,_1):((_1,_1024),_0,_0)
+tXrB: ptr[16b](0x7a3385fffc10) o ((_8,_2),_1,_1):((_1,_8),_0,_0)
+```
+
+### 2
+
+bM, bN, bK = 128, 128, 16
+g2s: cp.async
+s2r: ldmatrix.x4
+2-stages g2s
+
+GEMM average time over 10 iterations: 1.5358 ms
+GEMM average throughput over 10 iterations: 111859.7718 GFLOPS
+
+### SW
+
+```
+TiledMma: TiledMMA
+  ThrLayoutVMNK:  (_32,_2,_4,_1):(_1,_32,_64,_0)
+  PermutationMNK: (_64,_64,_16)
+MMA_Atom
+  ThrID:      _32:_1
+  Shape_MNK:  (_16,_8,_16)
+  LayoutA_TV: ((_4,_8),(_2,_2,_2)):((_32,_1),(_16,_8,_128))
+  LayoutB_TV: ((_4,_8),(_2,_2)):((_16,_1),(_8,_64))
+  LayoutC_TV: ((_4,_8),(_2,_2)):((_32,_1),(_16,_8))
+
+copyA: TiledCopy
+  Tiler_MN:       (_32,_64)
+  TiledLayout_TV: ((_8,_32),_8):((_256,_1),_32)
+Copy_Atom
+  ThrID:        _1:_0
+  ValLayoutSrc: (_1,_8):(_0,_1)
+  ValLayoutDst: (_1,_8):(_0,_1)
+  ValLayoutRef: (_1,_8):(_0,_1)
+  ValueType:    16b
+
+copyB: TiledCopy
+  Tiler_MN:       (_32,_64)
+  TiledLayout_TV: ((_8,_32),_8):((_256,_1),_32)
+Copy_Atom
+  ThrID:        _1:_0
+  ValLayoutSrc: (_1,_8):(_0,_1)
+  ValLayoutDst: (_1,_8):(_0,_1)
+  ValLayoutRef: (_1,_8):(_0,_1)
+  ValueType:    16b
+
+s2r_atom_A: Copy_Atom
+  ThrID:        _32:_1
+  ValLayoutSrc: (_32,_8):(_8,_1)
+  ValLayoutDst: (_32,(_2,_4)):(_2,(_1,_64))
+  ValLayoutRef: (_32,(_2,_4)):(_2,(_1,_64))
+  ValueType:    16b
+
+s2r_atom_B: Copy_Atom
+  ThrID:        _32:_1
+  ValLayoutSrc: (_32,_8):(_8,_1)
+  ValLayoutDst: (_32,(_2,_4)):(_2,(_1,_64))
+  ValLayoutRef: (_32,(_2,_4)):(_2,(_1,_64))
+  ValueType:    16b
+
+gA: gmem_ptr[16b](0x7583d2000000) o (_128,_64,64):(4096,_1,_64)
+gB: gmem_ptr[16b](0x7583cc000000) o (_128,_64,64):(4096,_1,_64)
+gC: gmem_ptr[32b](0x75838c000000) o (_128,_128):(5120,_1)
+
+sA: ptr[16b](0x758500000400) o Sw<3,3,3> o _0 o ((_8,_16),((_8,_8),_1)):((_8,_512),((_1,_64),_0))
+tAgA: gmem_ptr[16b](0x7583d2000000) o ((_8,_1),_4,_1,64):((_1,_0),131072,_0,_64)
+tAsA: ptr[16b](0x758500000400) o ((_8,_1),_4,_1):((_1,_0),_2048,_0)
+tCsA: ptr[16b](0x758500000400) o ((_2,_2,_2),_4,(_2,_2)):((_1,_512,72),_2048,(144,288))
+tCrA: ptr[16b](0x758411fffab0) o ((_2,_2,_2),(_2,_2),_4):((_1,_2,_4),(_32,_64),_8)
+
+sB: ptr[16b](0x758500004400) o Sw<3,3,3> o _0 o ((_8,_16),((_8,_8),_1)):((_8,_512),((_1,_64),_0))
+tAgB: gmem_ptr[16b](0x7583cc000000) o ((_8,_1),_4,_1,64):((_1,_0),131072,_0,_64)
+tAsB: ptr[16b](0x758500004400) o ((_8,_1),_4,_1):((_1,_0),_2048,_0)
+tCsB: ptr[16b](0x758500004400) o ((_2,_2),_4,(_2,_2)):((_1,72),_2048,(144,288))
+tCrB: ptr[16b](0x758411fffbb0) o ((_2,_2),(_2,_2),_4):((_1,_2),(_16,_32),_4)
+
+tXsA: ptr[16b](0x758500000400) o ((_8,_2),_2,(_2,_2)):((_1,_2048),_4096,(144,288))
+tXrA: ptr[16b](0x758411fffab0) o ((_8,_2),_2,_4):((_1,_32),_64,_8)
+tXsB: ptr[16b](0x758500004400) o ((_8,_1),_2,(_2,_2)):((_1,_0),_4096,(144,288))
+tXrB: ptr[16b](0x758411fffbb0) o (((_4,_2),_1),_2,_4):(((_1,_16),_0),_32,_4)
+```
