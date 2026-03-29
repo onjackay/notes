@@ -861,6 +861,108 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#cute-gemm-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      CuTe GEMM Example
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CuTe GEMM Example">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mma" class="md-nav__link">
+    <span class="md-ellipsis">
+      MMA
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s2r-copy" class="md-nav__link">
+    <span class="md-ellipsis">
+      S2R Copy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#smem-swizzling" class="md-nav__link">
+    <span class="md-ellipsis">
+      SMEM Swizzling
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#todo" class="md-nav__link">
+    <span class="md-ellipsis">
+      TODO
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Logs
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Logs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      1
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    <span class="md-ellipsis">
+      2
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    <span class="md-ellipsis">
+      3
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    <span class="md-ellipsis">
+      4
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1251,6 +1353,93 @@ M 维度上，第 0 个 MMA Atom 处理 M 维度上的第 0、2 个 8x8x4 的 MM
 <a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="w">                                    </span><span class="n">_4</span><span class="o">&gt;</span><span class="p">{});</span><span class="w">                   </span><span class="c1">// Permutation on K, size 4 identity</span>
 <a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="n">print_latex</span><span class="p">(</span><span class="n">mma</span><span class="p">);</span>
 </code></pre></div>
+<h2 id="cute-gemm-example">CuTe GEMM Example<a class="headerlink" href="#cute-gemm-example" title="Permanent link">&para;</a></h2>
+<h3 id="mma">MMA<a class="headerlink" href="#mma" title="Permanent link">&para;</a></h3>
+<p>使用 <code>SM80_16x8x16_F32BF16BF16F32_TN</code>，对应 <code>mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32</code>。
+A 矩阵的 layout 如下图：</p>
+<p><img alt="mma.m16n8k16 A Layout" src="mma-16816-A-f16.png" /></p>
+<p>B 矩阵的 layout：</p>
+<p><img alt="mma.m16n8k16 B Layout" src="mma-16816-B-f16.png" /></p>
+<p>A 用 TV layout 表示为 <code>((4, 8), (2, 2, 2)) : ((32, 1), (16, 8, 16))</code>，
+B 用 TV layout 表示为 <code>((4, 8), (2, 2) : (16, 1), (8, 64))</code>。
+这里的 layout 需要转置才能得到，为什么？
+这里 stride 为 1 恰恰不为连续，反而是跨过了一个最低的维度。</p>
+<p>我们使用 4 个 warp，组成一个 32x32x16 的 TiledMMA，这时每个 warp 发起两个 mma 指令：</p>
+<p><img alt="tiled_mma.m32n32k16.bf16" src="tiled_mma.png" /></p>
+<p>构造一个 5120x5120x4096 的 GEMM，A 和 B 都是 K-major，SMEM 的 Tile shape 为 128x128x16。
+在一个 tiled_mma 内，MMA 在 N 维度上需要循环重复 2 次。
+在一个 block tile 内，tiled_mma 要在 M 维度上重复 4 次，在 N 维度上重复 4 次。
+打印 tiled_mma 一个线程在 GMEM 上的划分 Layout：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>tCgA: gmem_ptr[16b](0x7bb46e000000) o ((_2,_2,_2),_4,_1,256):((_1,32768,_8),131072,_0,_16)
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>tCgB: gmem_ptr[16b](0x7bb468000000) o ((_2,_2),(_2,_4),_1,256):((_1,_8),(65536,131072),_0,_16)
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>tCgC: gmem_ptr[32b](0x7bb428000000) o ((_2,_2),_4,_8):((_1,40960),163840,_16)
+</code></pre></div>
+<p>tCgA 的 MMA 维度有 8 个元素，在 M 维度上重复 4 次。
+tCgB 的 MMA 维度有 4 个元素，在 M 维度上重复 8 次。
+tCgC 的 MMA 维度有 4 个元素，在 M 维度上重复 4 次，在 N 维度上重复 8 次。
+符合预期。</p>
+<h3 id="s2r-copy">S2R Copy<a class="headerlink" href="#s2r-copy" title="Permanent link">&para;</a></h3>
+<p>使用 <code>SM75_U32x4_LDSM_N</code> 这个 CopyAtom，对应 <code>ldmatrix.sync.aligned.x4.m8n8.shared.b16</code>。
+这样一个指令拷贝大小 32x8 的矩阵，每个线程拿到 8 个元素。
+但实际上，我们看作是拷贝了一块大小为 16x16 的矩阵，让 k 方向与 mma 的 k 大小对齐。
+这样，对于左半 16x8 的矩阵，我们让线程 0-15 读取。对于右半 16x8 的矩阵，让线程 16-31 读取。 </p>
+<p>对于 A，一次拷贝正好满足一次 MMA 所需的元素。
+对于 B，一次拷贝能满足两次 MMA 所需的元素，恰好等于做一次 tiled_mma。</p>
+<p><img alt="ldmatrix.x4.m8n8.b16" src="s2r_tiled_copy_a.png" /></p>
+<p>一个 tiled_copy 包含 2 个 warp，拷贝大小为 32x16 的矩阵，符合一次 tiled_mma 的大小。</p>
+<p>打印 s2r copy 一个线程在 SMEM 和 RMEM 上的划分 Layout：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>tXsA: ptr[16b](0x7bb500000400) o ((_8,_1),_4,_1,_2):((_1,_0),_512,_0,_2048)
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>tXrA: ptr[16b](0x7bb4adfffba0) o ((_8,_1),_4,_1):((_1,_0),_8,_0)
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>tXsB: ptr[16b](0x7bb500002400) o ((_8,_1),_4,_1,_2):((_1,_0),_512,_0,_2048)
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>tXrB: ptr[16b](0x7bb4adfffbe0) o ((_8,_1),_4,_1):((_1,_0),_8,_0)
+</code></pre></div>
+<p>A 和 B 在 Copy 维度上都有 8 个元素，对应一次 tiled_mma。
+A 在 M 维度上重复 4 次，B 在 N 维度上重复 4 次，对应了整个 tile block 上的 mma。</p>
+<h3 id="smem-swizzling">SMEM Swizzling<a class="headerlink" href="#smem-swizzling" title="Permanent link">&para;</a></h3>
+<p>这里分析上述一次 ldmatrix.x4 时的 bank conflict。
+在一次 ldmatrix 时，每个线程要从 SMEM 中读取 8 个 F16 元素，也就是 16 个字节。
+由于一个 cycle 只能从 SMEM 读取 128 字节，一次 ldmatrix.x4 分成 4 个阶段，每个阶段 8 个线程一共读取 128 字节。
+线程 0-7，线程 8-15，线程 16-23，线程 24-31 分批读取 SMEM。</p>
+<p>在上面的例子中，每行 16 个元素即 32 个字节，则每 4 行间隔 128 字节。
+因此，线程 0 和 4，1 和 5，2 和 6，3 和 7 存在 bank conflict。</p>
+<p>CuTe 中解决 back conflict 的方法是 SMEM Swizzling: <code>Swizzle&lt;B, M, S&gt;</code>。
+连续 <span class="arithmatex">\(2^M\)</span> 个元素组成一个单位，单位内排列顺序不变，<span class="arithmatex">\(2^S\)</span> 个这样的单位组成一行，一共有 <span class="arithmatex">\(2^B\)</span> 行。
+对于 F16，我们使用 <code>Swizzle&lt;3, 3, 3&gt;</code>。
+8 个 2 字节元素组成一个 16 字节的单位，8 个这样的单位组成一行，一行 128 字节，共 8 行。
+如此，每 8 个线程可以访问 8 行中的不同单位，避免 bank conflict。</p>
+<h3 id="todo">TODO<a class="headerlink" href="#todo" title="Permanent link">&para;</a></h3>
+<p>TODO: swap AB for small M</p>
+<h2 id="logs">Logs<a class="headerlink" href="#logs" title="Permanent link">&para;</a></h2>
+<p>bf16 on sm120
+5120 x 5120 x 4096</p>
+<h3 id="1">1<a class="headerlink" href="#1" title="Permanent link">&para;</a></h3>
+<p>bM, bN, bK = 128, 128, 16
+g2s: cp.async
+s2r: ldmatrix.x4
+single-stage</p>
+<p>GEMM average time over 10 iterations: 1.7016 ms
+GEMM average throughput over 10 iterations: 100965.9084 GFLOPS</p>
+<h3 id="2">2<a class="headerlink" href="#2" title="Permanent link">&para;</a></h3>
+<p>bM, bN, bK = 128, 128, 16
+g2s: cp.async
+s2r: ldmatrix.x4
+2-stages g2s</p>
+<p>GEMM average time over 10 iterations: 1.5673 ms
+GEMM average throughput over 10 iterations: 109613.3988 GFLOPS</p>
+<h3 id="3">3<a class="headerlink" href="#3" title="Permanent link">&para;</a></h3>
+<p>bM, bN, bK = 128, 128, 16
+g2s: cp.async
+s2r: ldmatrix.x4 + swizzling
+2-stages g2s</p>
+<p>GEMM average time over 10 iterations: 1.5630 ms
+GEMM average throughput over 10 iterations: 109914.6320 GFLOPS</p>
+<h3 id="4">4<a class="headerlink" href="#4" title="Permanent link">&para;</a></h3>
+<p>bM, bN, bK = 128, 128, 64
+g2s: cp.async
+s2r: ldmatrix.x4 + swizzling
+2-stages g2s + 2-stage s2r</p>
+<p>GEMM average time over 10 iterations: 1.5322 ms
+GEMM average throughput over 10 iterations: 112128.7837 GFLOPS</p>
 
 
 
