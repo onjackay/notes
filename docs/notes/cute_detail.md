@@ -337,6 +337,24 @@ TODO: swap AB for small M
 bf16 on sm120
 5120 x 5120 x 4096
 
+### 0 Baselines
+
+#### sgemm_sm80_fp16
+
+Using device 0: NVIDIA GeForce RTX 5090 D (SM120, 170)
+M = 5120
+N = 5120
+K = 4096
+C = A^T B^N
+CUTE_GEMM:     [260456.6]GFlop/s  (0.8245)ms
+
+#### cutlass_example_sm80
+
+bf16:
+
+Runtime: 2.66003 ms
+ GFLOPs: 80731.5
+
 ### 1
 
 bM, bN, bK = 128, 128, 16
@@ -345,7 +363,6 @@ s2r: ldmatrix.x4
 single-stage
 
 GEMM average time over 10 iterations: 1.7016 ms
-GEMM average throughput over 10 iterations: 100965.9084 GFLOPS
 
 ### 2
 
@@ -355,7 +372,6 @@ s2r: ldmatrix.x4
 2-stages g2s
 
 GEMM average time over 10 iterations: 1.5673 ms
-GEMM average throughput over 10 iterations: 109613.3988 GFLOPS
 
 ### 3
 
@@ -365,7 +381,6 @@ s2r: ldmatrix.x4 + swizzling
 2-stages g2s
 
 GEMM average time over 10 iterations: 1.5630 ms
-GEMM average throughput over 10 iterations: 109914.6320 GFLOPS
 
 ### 4
 
@@ -375,4 +390,130 @@ s2r: ldmatrix.x4 + swizzling
 2-stages g2s + 2-stage s2r
 
 GEMM average time over 10 iterations: 1.5322 ms
-GEMM average throughput over 10 iterations: 112128.7837 GFLOPS
+
+### 5
+
+Fix SMEM swizzle for uncoalesed store in LDGSTS
+
+--- Testing bfloat16 ---
+GEMM average time over 10 iterations: 1.4779 ms
+GEMM average throughput over 10 iterations: 145307.2799 GFLOPS
+
+--- Testing float16 ---
+GEMM average time over 10 iterations: 0.8955 ms
+GEMM average throughput over 10 iterations: 239818.6998 GFLOPS
+
+### 6
+
+Use vectorized R2G copy
+
+--- Testing bfloat16 ---
+GEMM average time over 10 iterations: 1.4495 ms
+GEMM average throughput over 10 iterations: 148155.1332 GFLOPS
+
+--- Testing float16 ---
+GEMM average time over 10 iterations: 0.8307 ms
+GEMM average throughput over 10 iterations: 258502.1883 GFLOPS
+
+使用 cudaEvent 计时修正后：
+
+--- Testing bfloat16 ---
+GEMM average time over 10 iterations: 1.3709 ms
+GEMM average throughput over 10 iterations: 156644.5244 GFLOPS
+
+--- Testing float16 ---
+GEMM average time over 10 iterations: 0.8037 ms
+GEMM average throughput over 10 iterations: 267204.1698 GFLOPS
+
+使用 NCU 计时：
+
+Total FLOPs = 2 × M × N × K = 2 × 5120 × 5120 × 4096 = 214,748,364,800 FLOPs
+Achieved TFLOPS = 214.75e9 / 770.53e-6 / 1e12 ≈ 278.7 TFLOPS
+
+#### Use 8 warps - 256 threads
+
+--- Testing float16 ---
+GEMM average time over 10 iterations: 0.8181 ms
+GEMM average throughput over 10 iterations: 262489.5352 GFLOPS
+
+--- Testing bfloat16 ---
+GEMM average time over 10 iterations: 1.3668 ms
+GEMM average throughput over 10 iterations: 157112.1047 GFLOPS
+
+### TMA 1
+
+sA: Sw<2,4,3>_smem_ptr[16b](0x7c2000000400) o ((_8,_16),(_32,_1),(_1,_3)):((_32,_256),(_1,_0),(_0,_4096))
+tAgA: ArithTuple(_0,0) o (((_32,_128),_1),128):(((_1@0,_1@1),_0),_32@0)
+tAsA: Sw<2,4,3>_smem_ptr[16b](0x7c2000000400) o ((_4096,_1),(_1,_3)):((_1,_0),(_0,_4096))
+
+sB: Sw<2,4,3>_smem_ptr[16b](0x7c2000006400) o ((_8,_16),(_32,_1),(_1,_3)):((_32,_256),(_1,_0),(_0,_4096))
+tBgB: ArithTuple(_0,0) o (((_32,_128),_1),128):(((_1@0,_1@1),_0),_32@0)
+tBsB: Sw<2,4,3>_smem_ptr[16b](0x7c2000006400) o ((_4096,_1),(_1,_3)):((_1,_0),(_0,_4096))
+
+tXsA: Sw<2,4,3>_smem_ptr[16b](0x7c2000000400) o ((_8,_1),_4,_2,(_1,_3)):((_1,_0),_1024,_16,(_0,_4096))
+tXrA: ptr[16b](0x7c1f65fffa40) o ((_8,_1),_4,_2):((_1,_0),_16,_8)
+tXsB: Sw<2,4,3>_smem_ptr[16b](0x7c2000006400) o ((_8,_1),_4,_2,(_1,_3)):((_1,_0),_1024,_16,(_0,_4096))
+tXrB: ptr[16b](0x7c1f65fffac0) o (((_4,_2),_1),_4,_2):(((_1,_8),_0),_16,_4)
+
+tCrA: ptr[16b](0x7c1f65fffa40) o ((_2,_2,_2),_4,_2):((_1,_2,_4),_16,_8)
+tCrB: ptr[16b](0x7c1f65fffac0) o ((_2,_2),_8,_2):((_1,_2),_8,_4)
+tCrC: ptr[16b](0x7c1f65fffb40) o ((_2,_2),_4,_8):((_1,_2),_4,_16)
+tCgC: gmem_ptr[16b](0x7c1f3e000000) o ((_2,_2),_4,_8):((_1,40960),163840,_16)
+
+--- Testing float16 ---
+GEMM result is correct!
+GEMM average time over 100 iterations: 0.7978 ms
+GEMM average throughput over 100 iterations: 269181.3050 GFLOPS
+
+--- Testing bfloat16 ---
+GEMM result is correct!
+GEMM average time over 100 iterations: 1.3659 ms
+GEMM average throughput over 100 iterations: 157215.4960 GFLOPS
+
+--- Testing float16 tma ---
+GEMM result is correct!
+GEMM average time over 100 iterations: 0.8047 ms
+GEMM average throughput over 100 iterations: 266863.2023 GFLOPS
+
+--- Testing bfloat16 tma ---
+GEMM result is correct!
+GEMM average time over 100 iterations: 1.3612 ms
+GEMM average throughput over 100 iterations: 157765.0726 GFLOPS
+
+#### Change to 256 threads
+
+--- Testing float16 ---
+GEMM result is correct!
+GEMM average time over 10 iterations: 0.8118 ms
+GEMM average throughput over 10 iterations: 264535.1385 GFLOPS
+
+--- Testing bfloat16 ---
+GEMM result is correct!
+GEMM average time over 10 iterations: 1.3790 ms
+GEMM average throughput over 10 iterations: 155723.4466 GFLOPS
+
+--- Testing float16 tma ---
+GEMM result is correct!
+GEMM average time over 10 iterations: 1.0447 ms
+GEMM average throughput over 10 iterations: 205559.0607 GFLOPS
+
+--- Testing bfloat16 tma ---
+GEMM result is correct!
+GEMM average time over 10 iterations: 1.3359 ms
+GEMM average throughput over 10 iterations: 160752.1108 GFLOPS
+
+## Baselines
+
+FP16:
+Triton: 1.1510
+Triton-P: 1.2316
+torch.matmul: 1.1168
+Taffy: 0.78
+cutlass 2.x: 2.31892
+
+BF16:
+
+Triton: 1.1538 ms
+Triton-P: 1.2433 ms
+torch.matmul: 1.3340 ms
+Taffy: 1.38
