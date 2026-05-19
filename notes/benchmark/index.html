@@ -546,6 +546,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -814,6 +818,52 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../note/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Note
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tmux-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    tmux: A Comprehensive Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -967,38 +1017,78 @@
 <a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>└─ 141.397 4860.038 torch [M=8192, N=8192, K=512]
 <a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>   └─ nan 4860.038 _ZN7cutlass7Kernel2I66cutlass_80_tensorop_f16_s16816gemm_relu_f16_256x128_32x3_tn_align8EEvNT_6ParamsE
 </code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>152.105 361432.388 ROOT
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>├─ 163.805 33561.663 cuBLAS [M=8192, N=8192, K=4096]
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>│  └─ nan 33561.663 _ZN7cutlass7Kernel2I65cutlass_80_tensorop_f16_s16816gemm_relu_f16_64x256_32x4_tn_align8EEvNT_6ParamsE
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>├─ 164.485 33422.771 matmul_kernel [M=8192, N=8192, K=4096]
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>├─ 142.180 38666.284 matmul_kernel_descriptor_persistent [M=8192, N=8192, K=4096]
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>├─ 145.775 37712.702 matmul_kernel_descriptor_persistent_ws [M=8192, N=8192, K=4096]
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>├─ 153.797 35745.615 matmul_kernel_persistent [M=8192, N=8192, K=4096]
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>├─ 159.969 34366.454 matmul_kernel_tma [M=8192, N=8192, K=4096]
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>├─ 142.289 38636.550 matmul_kernel_tma_persistent [M=8192, N=8192, K=4096]
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>├─ 145.831 37698.195 matmul_kernel_tma_persistent_ws [M=8192, N=8192, K=4096]
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>├─ 144.405 38070.502 matmul_kernel_tma_ws [M=8192, N=8192, K=4096]
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>└─ 163.854 33551.651 torch [M=8192, N=8192, K=4096]
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>   └─ nan 33551.651 _ZN7cutlass7Kernel2I65cutlass_80_tensorop_f16_s16816gemm_relu_f16_64x256_32x4_tn_align8EEvNT_6ParamsE
+</code></pre></div>
+<h3 id="base">Base<a class="headerlink" href="#base" title="Permanent link">&para;</a></h3>
+<p>--- Testing float16 ---
+GEMM average time over 10 iterations: 3.9855 ms
+GEMM average throughput over 10 iterations: 275877.2548 GFLOPS</p>
+<p>--- Testing bfloat16 ---
+GEMM average time over 10 iterations: 6.6677 ms
+GEMM average throughput over 10 iterations: 164901.8401 GFLOPS</p>
+<p>--- Testing float16 tma ---
+GEMM average time over 10 iterations: 3.9904 ms
+GEMM average throughput over 10 iterations: 275537.4408 GFLOPS</p>
+<p>--- Testing bfloat16 tma ---
+GEMM average time over 10 iterations: 6.6888 ms
+GEMM average throughput over 10 iterations: 164381.7855 GFLOPS</p>
+<h3 id="tma">去除tma 版本的访存:<a class="headerlink" href="#tma" title="Permanent link">&para;</a></h3>
+<p>--- Testing float16 ---
+GEMM average time over 10 iterations: 3.9882 ms
+GEMM average throughput over 10 iterations: 275693.0684 GFLOPS</p>
+<p>--- Testing bfloat16 ---
+GEMM average time over 10 iterations: 6.6730 ms
+GEMM average throughput over 10 iterations: 164770.2607 GFLOPS</p>
+<p>--- Testing float16 tma ---
+GEMM average time over 10 iterations: 3.9108 ms
+GEMM average throughput over 10 iterations: 281150.4731 GFLOPS (+2.0%)</p>
+<p>--- Testing bfloat16 tma ---
+GEMM average time over 10 iterations: 6.5445 ms
+GEMM average throughput over 10 iterations: 168005.7973 GFLOPS (+2.2%)</p>
 <p>5090 为何 persistent 表现比 non-persistent 要更差？</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>==================================================
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>MATRIX BENCHMARK SUMMARY
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>==================================================
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>M values: [64, 256, 1024, 4096]
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>N: 4096
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>K: 4096
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>Layout: TT
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>Data type: torch.bfloat16
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>Operation                            Time (ms)        flops (TF/s)     MFU (%)
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>--------------------------------------------------------------------------------
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>(64,4096,4096) base                  0.092            23.384           22.31
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>(64,4096,4096) persistent            0.091            23.656           22.57
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>(64,4096,4096) tma                   0.103            20.757           19.81
-<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>(64,4096,4096) tma_persistent        0.103            20.893           19.94
-<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>--------------------------------------------------------------------------------
-<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>(256,4096,4096) base                  0.096            89.673           85.57
-<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>(256,4096,4096) persistent            0.093            92.186           87.96
-<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>(256,4096,4096) tma                   0.107            80.558           76.87
-<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>(256,4096,4096) tma_persistent        0.106            81.118           77.40
-<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>--------------------------------------------------------------------------------
-<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>(1024,4096,4096) base                  0.300            114.426          109.19
-<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>(1024,4096,4096) persistent            0.300            114.698          109.44
-<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>(1024,4096,4096) tma                   0.317            108.548          103.58
-<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>(1024,4096,4096) tma_persistent        0.315            108.914          103.93
-<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>--------------------------------------------------------------------------------
-<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>(4096,4096,4096) base                  0.907            151.473          144.54
-<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>(4096,4096,4096) persistent            0.906            151.688          144.74
-<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>(4096,4096,4096) tma                   0.919            149.537          142.69
-<a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>(4096,4096,4096) tma_persistent        0.918            149.722          142.86
-<a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a>--------------------------------------------------------------------------------
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>==================================================
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>MATRIX BENCHMARK SUMMARY
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>==================================================
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>M values: [64, 256, 1024, 4096]
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>N: 4096
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>K: 4096
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>Layout: TT
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>Data type: torch.bfloat16
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>Operation                            Time (ms)        flops (TF/s)     MFU (%)
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>--------------------------------------------------------------------------------
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>(64,4096,4096) base                  0.092            23.384           22.31
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>(64,4096,4096) persistent            0.091            23.656           22.57
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>(64,4096,4096) tma                   0.103            20.757           19.81
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>(64,4096,4096) tma_persistent        0.103            20.893           19.94
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>--------------------------------------------------------------------------------
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>(256,4096,4096) base                  0.096            89.673           85.57
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>(256,4096,4096) persistent            0.093            92.186           87.96
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>(256,4096,4096) tma                   0.107            80.558           76.87
+<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>(256,4096,4096) tma_persistent        0.106            81.118           77.40
+<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>--------------------------------------------------------------------------------
+<a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>(1024,4096,4096) base                  0.300            114.426          109.19
+<a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a>(1024,4096,4096) persistent            0.300            114.698          109.44
+<a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a>(1024,4096,4096) tma                   0.317            108.548          103.58
+<a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a>(1024,4096,4096) tma_persistent        0.315            108.914          103.93
+<a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a>--------------------------------------------------------------------------------
+<a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a>(4096,4096,4096) base                  0.907            151.473          144.54
+<a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a>(4096,4096,4096) persistent            0.906            151.688          144.74
+<a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a>(4096,4096,4096) tma                   0.919            149.537          142.69
+<a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a>(4096,4096,4096) tma_persistent        0.918            149.722          142.86
+<a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a>--------------------------------------------------------------------------------
 </code></pre></div>
 <h2 id="5090d">5090D<a class="headerlink" href="#5090d" title="Permanent link">&para;</a></h2>
 <h3 id="specs">SPECS<a class="headerlink" href="#specs" title="Permanent link">&para;</a></h3>

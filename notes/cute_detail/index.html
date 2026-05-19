@@ -554,6 +554,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -923,6 +927,39 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#0-baselines" class="md-nav__link">
+    <span class="md-ellipsis">
+      0 Baselines
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0 Baselines">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sgemm_sm80_fp16" class="md-nav__link">
+    <span class="md-ellipsis">
+      sgemm_sm80_fp16
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cutlass_example_sm80" class="md-nav__link">
+    <span class="md-ellipsis">
+      cutlass_example_sm80
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#1" class="md-nav__link">
     <span class="md-ellipsis">
       1
@@ -958,8 +995,74 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#5" class="md-nav__link">
+    <span class="md-ellipsis">
+      5
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6" class="md-nav__link">
+    <span class="md-ellipsis">
+      6
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#use-8-warps-256-threads" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use 8 warps - 256 threads
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tma-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      TMA 1
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="TMA 1">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#change-to-256-threads" class="md-nav__link">
+    <span class="md-ellipsis">
+      Change to 256 threads
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#baselines" class="md-nav__link">
+    <span class="md-ellipsis">
+      Baselines
+    </span>
+  </a>
   
 </li>
       
@@ -1008,6 +1111,52 @@
   
   <span class="md-ellipsis">
     L40 Experiments
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../note/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Note
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tmux-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    tmux: A Comprehensive Guide
     
   </span>
   
@@ -1412,34 +1561,135 @@ A 在 M 维度上重复 4 次，B 在 N 维度上重复 4 次，对应了整个 
 <h2 id="logs">Logs<a class="headerlink" href="#logs" title="Permanent link">&para;</a></h2>
 <p>bf16 on sm120
 5120 x 5120 x 4096</p>
+<h3 id="0-baselines">0 Baselines<a class="headerlink" href="#0-baselines" title="Permanent link">&para;</a></h3>
+<h4 id="sgemm_sm80_fp16">sgemm_sm80_fp16<a class="headerlink" href="#sgemm_sm80_fp16" title="Permanent link">&para;</a></h4>
+<p>Using device 0: NVIDIA GeForce RTX 5090 D (SM120, 170)
+M = 5120
+N = 5120
+K = 4096
+C = A^T B^N
+CUTE_GEMM:     [260456.6]GFlop/s  (0.8245)ms</p>
+<h4 id="cutlass_example_sm80">cutlass_example_sm80<a class="headerlink" href="#cutlass_example_sm80" title="Permanent link">&para;</a></h4>
+<p>bf16:</p>
+<p>Runtime: 2.66003 ms
+ GFLOPs: 80731.5</p>
 <h3 id="1">1<a class="headerlink" href="#1" title="Permanent link">&para;</a></h3>
 <p>bM, bN, bK = 128, 128, 16
 g2s: cp.async
 s2r: ldmatrix.x4
 single-stage</p>
-<p>GEMM average time over 10 iterations: 1.7016 ms
-GEMM average throughput over 10 iterations: 100965.9084 GFLOPS</p>
+<p>GEMM average time over 10 iterations: 1.7016 ms</p>
 <h3 id="2">2<a class="headerlink" href="#2" title="Permanent link">&para;</a></h3>
 <p>bM, bN, bK = 128, 128, 16
 g2s: cp.async
 s2r: ldmatrix.x4
 2-stages g2s</p>
-<p>GEMM average time over 10 iterations: 1.5673 ms
-GEMM average throughput over 10 iterations: 109613.3988 GFLOPS</p>
+<p>GEMM average time over 10 iterations: 1.5673 ms</p>
 <h3 id="3">3<a class="headerlink" href="#3" title="Permanent link">&para;</a></h3>
 <p>bM, bN, bK = 128, 128, 16
 g2s: cp.async
 s2r: ldmatrix.x4 + swizzling
 2-stages g2s</p>
-<p>GEMM average time over 10 iterations: 1.5630 ms
-GEMM average throughput over 10 iterations: 109914.6320 GFLOPS</p>
+<p>GEMM average time over 10 iterations: 1.5630 ms</p>
 <h3 id="4">4<a class="headerlink" href="#4" title="Permanent link">&para;</a></h3>
 <p>bM, bN, bK = 128, 128, 64
 g2s: cp.async
 s2r: ldmatrix.x4 + swizzling
 2-stages g2s + 2-stage s2r</p>
-<p>GEMM average time over 10 iterations: 1.5322 ms
-GEMM average throughput over 10 iterations: 112128.7837 GFLOPS</p>
+<p>GEMM average time over 10 iterations: 1.5322 ms</p>
+<h3 id="5">5<a class="headerlink" href="#5" title="Permanent link">&para;</a></h3>
+<p>Fix SMEM swizzle for uncoalesed store in LDGSTS</p>
+<p>--- Testing bfloat16 ---
+GEMM average time over 10 iterations: 1.4779 ms
+GEMM average throughput over 10 iterations: 145307.2799 GFLOPS</p>
+<p>--- Testing float16 ---
+GEMM average time over 10 iterations: 0.8955 ms
+GEMM average throughput over 10 iterations: 239818.6998 GFLOPS</p>
+<h3 id="6">6<a class="headerlink" href="#6" title="Permanent link">&para;</a></h3>
+<p>Use vectorized R2G copy</p>
+<p>--- Testing bfloat16 ---
+GEMM average time over 10 iterations: 1.4495 ms
+GEMM average throughput over 10 iterations: 148155.1332 GFLOPS</p>
+<p>--- Testing float16 ---
+GEMM average time over 10 iterations: 0.8307 ms
+GEMM average throughput over 10 iterations: 258502.1883 GFLOPS</p>
+<p>使用 cudaEvent 计时修正后：</p>
+<p>--- Testing bfloat16 ---
+GEMM average time over 10 iterations: 1.3709 ms
+GEMM average throughput over 10 iterations: 156644.5244 GFLOPS</p>
+<p>--- Testing float16 ---
+GEMM average time over 10 iterations: 0.8037 ms
+GEMM average throughput over 10 iterations: 267204.1698 GFLOPS</p>
+<p>使用 NCU 计时：</p>
+<p>Total FLOPs = 2 × M × N × K = 2 × 5120 × 5120 × 4096 = 214,748,364,800 FLOPs
+Achieved TFLOPS = 214.75e9 / 770.53e-6 / 1e12 ≈ 278.7 TFLOPS</p>
+<h4 id="use-8-warps-256-threads">Use 8 warps - 256 threads<a class="headerlink" href="#use-8-warps-256-threads" title="Permanent link">&para;</a></h4>
+<p>--- Testing float16 ---
+GEMM average time over 10 iterations: 0.8181 ms
+GEMM average throughput over 10 iterations: 262489.5352 GFLOPS</p>
+<p>--- Testing bfloat16 ---
+GEMM average time over 10 iterations: 1.3668 ms
+GEMM average throughput over 10 iterations: 157112.1047 GFLOPS</p>
+<h3 id="tma-1">TMA 1<a class="headerlink" href="#tma-1" title="Permanent link">&para;</a></h3>
+<p>sA: Sw&lt;2,4,3&gt;_smem_ptr<a href="0x7c2000000400">16b</a> o ((_8,_16),(_32,_1),(_1,_3)):((_32,_256),(_1,_0),(_0,_4096))
+tAgA: ArithTuple(_0,0) o (((_32,_128),_1),128):(((_1@0,_1@1),_0),_32@0)
+tAsA: Sw&lt;2,4,3&gt;_smem_ptr<a href="0x7c2000000400">16b</a> o ((_4096,_1),(_1,_3)):((_1,_0),(_0,_4096))</p>
+<p>sB: Sw&lt;2,4,3&gt;_smem_ptr<a href="0x7c2000006400">16b</a> o ((_8,_16),(_32,_1),(_1,_3)):((_32,_256),(_1,_0),(_0,_4096))
+tBgB: ArithTuple(_0,0) o (((_32,_128),_1),128):(((_1@0,_1@1),_0),_32@0)
+tBsB: Sw&lt;2,4,3&gt;_smem_ptr<a href="0x7c2000006400">16b</a> o ((_4096,_1),(_1,_3)):((_1,_0),(_0,_4096))</p>
+<p>tXsA: Sw&lt;2,4,3&gt;_smem_ptr<a href="0x7c2000000400">16b</a> o ((_8,_1),_4,_2,(_1,_3)):((_1,_0),_1024,_16,(_0,_4096))
+tXrA: ptr<a href="0x7c1f65fffa40">16b</a> o ((_8,_1),_4,_2):((_1,_0),_16,_8)
+tXsB: Sw&lt;2,4,3&gt;_smem_ptr<a href="0x7c2000006400">16b</a> o ((_8,_1),_4,_2,(_1,_3)):((_1,_0),_1024,_16,(_0,_4096))
+tXrB: ptr<a href="0x7c1f65fffac0">16b</a> o (((_4,_2),_1),_4,_2):(((_1,_8),_0),_16,_4)</p>
+<p>tCrA: ptr<a href="0x7c1f65fffa40">16b</a> o ((_2,_2,_2),_4,_2):((_1,_2,_4),_16,_8)
+tCrB: ptr<a href="0x7c1f65fffac0">16b</a> o ((_2,_2),_8,_2):((_1,_2),_8,_4)
+tCrC: ptr<a href="0x7c1f65fffb40">16b</a> o ((_2,_2),_4,_8):((_1,_2),_4,_16)
+tCgC: gmem_ptr<a href="0x7c1f3e000000">16b</a> o ((_2,_2),_4,_8):((_1,40960),163840,_16)</p>
+<p>--- Testing float16 ---
+GEMM result is correct!
+GEMM average time over 100 iterations: 0.7978 ms
+GEMM average throughput over 100 iterations: 269181.3050 GFLOPS</p>
+<p>--- Testing bfloat16 ---
+GEMM result is correct!
+GEMM average time over 100 iterations: 1.3659 ms
+GEMM average throughput over 100 iterations: 157215.4960 GFLOPS</p>
+<p>--- Testing float16 tma ---
+GEMM result is correct!
+GEMM average time over 100 iterations: 0.8047 ms
+GEMM average throughput over 100 iterations: 266863.2023 GFLOPS</p>
+<p>--- Testing bfloat16 tma ---
+GEMM result is correct!
+GEMM average time over 100 iterations: 1.3612 ms
+GEMM average throughput over 100 iterations: 157765.0726 GFLOPS</p>
+<h4 id="change-to-256-threads">Change to 256 threads<a class="headerlink" href="#change-to-256-threads" title="Permanent link">&para;</a></h4>
+<p>--- Testing float16 ---
+GEMM result is correct!
+GEMM average time over 10 iterations: 0.8118 ms
+GEMM average throughput over 10 iterations: 264535.1385 GFLOPS</p>
+<p>--- Testing bfloat16 ---
+GEMM result is correct!
+GEMM average time over 10 iterations: 1.3790 ms
+GEMM average throughput over 10 iterations: 155723.4466 GFLOPS</p>
+<p>--- Testing float16 tma ---
+GEMM result is correct!
+GEMM average time over 10 iterations: 1.0447 ms
+GEMM average throughput over 10 iterations: 205559.0607 GFLOPS</p>
+<p>--- Testing bfloat16 tma ---
+GEMM result is correct!
+GEMM average time over 10 iterations: 1.3359 ms
+GEMM average throughput over 10 iterations: 160752.1108 GFLOPS</p>
+<h2 id="baselines">Baselines<a class="headerlink" href="#baselines" title="Permanent link">&para;</a></h2>
+<p>FP16:
+Triton: 1.1510
+Triton-P: 1.2316
+torch.matmul: 1.1168
+Taffy: 0.78
+cutlass 2.x: 2.31892</p>
+<p>BF16:</p>
+<p>Triton: 1.1538 ms
+Triton-P: 1.2433 ms
+torch.matmul: 1.3340 ms
+Taffy: 1.38</p>
 
 
 

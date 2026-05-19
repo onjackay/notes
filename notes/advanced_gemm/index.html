@@ -20,7 +20,7 @@
     
     
       
-        <title>Yi Meng Notes - My Notes</title>
+        <title>GEMM SM120 - My Notes</title>
       
     
     
@@ -74,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#yi-meng-notes" class="md-skip">
+        <a href="#gemm-sm120" class="md-skip">
           Skip to content
         </a>
       
@@ -108,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Yi Meng Notes
+              GEMM SM120
             
           </span>
         </div>
@@ -264,7 +264,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../notes/fused_moe/" class="md-tabs__link">
+        <a href="../fused_moe/" class="md-tabs__link">
           
   
   
@@ -286,7 +286,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../theory/" class="md-tabs__link">
+        <a href="../../fire/theory/" class="md-tabs__link">
           
   
   
@@ -546,6 +546,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -591,7 +595,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notes/fused_moe/" class="md-nav__link">
+      <a href="../fused_moe/" class="md-nav__link">
         
   
   
@@ -614,7 +618,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notes/flash-attention/" class="md-nav__link">
+      <a href="../flash-attention/" class="md-nav__link">
         
   
   
@@ -637,7 +641,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notes/mla/" class="md-nav__link">
+      <a href="../mla/" class="md-nav__link">
         
   
   
@@ -660,7 +664,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notes/vllm/" class="md-nav__link">
+      <a href="../vllm/" class="md-nav__link">
         
   
   
@@ -683,7 +687,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notes/papers/" class="md-nav__link">
+      <a href="../papers/" class="md-nav__link">
         
   
   
@@ -706,7 +710,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notes/quantization/" class="md-nav__link">
+      <a href="../quantization/" class="md-nav__link">
         
   
   
@@ -729,7 +733,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notes/cute/" class="md-nav__link">
+      <a href="../cute/" class="md-nav__link">
         
   
   
@@ -752,7 +756,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notes/cute_detail/" class="md-nav__link">
+      <a href="../cute_detail/" class="md-nav__link">
         
   
   
@@ -775,7 +779,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notes/rmsnorm/" class="md-nav__link">
+      <a href="../rmsnorm/" class="md-nav__link">
         
   
   
@@ -798,12 +802,58 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notes/l40/" class="md-nav__link">
+      <a href="../l40/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     L40 Experiments
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../note/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Note
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tmux-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    tmux: A Comprehensive Guide
     
   </span>
   
@@ -877,7 +927,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../theory/" class="md-nav__link">
+      <a href="../../fire/theory/" class="md-nav__link">
         
   
   
@@ -938,13 +988,64 @@
 
 
 
-<h1 id="yi-meng-notes">Yi Meng Notes<a class="headerlink" href="#yi-meng-notes" title="Permanent link">&para;</a></h1>
-<h2 id="-">机构-九大战区<a class="headerlink" href="#-" title="Permanent link">&para;</a></h2>
+<h1 id="gemm-sm120">GEMM SM120<a class="headerlink" href="#gemm-sm120" title="Permanent link">&para;</a></h1>
+<h2 id="theoretical">Theoretical<a class="headerlink" href="#theoretical" title="Permanent link">&para;</a></h2>
+<p><strong>Specs</strong></p>
 <ul>
-<li>市场宽度：上涨/下跌</li>
-<li>量能潮汐：成交量</li>
-<li>行业拥挤度：估值分位</li>
+<li>Arch: SM120</li>
+<li>SM Count: 170 </li>
+<li>L1 Cache: 128 KB (per SM) </li>
+<li>L2 Cache: 96 MB </li>
 </ul>
+<p><strong>Base GEMM:</strong></p>
+<ul>
+<li>Average SM Active Cycles: 1340238.56</li>
+<li>Tensor Pipe utilization: 92.04%</li>
+<li>Problem Size: 5120x5120x4096</li>
+<li>MMA Ops per SM: 5120/16 x 5120/8 x 4096/16 / 170 = 308404.7</li>
+<li>MMA Latency = 1340238.56 x 0.9204 / 308404.7 = 4 cycles</li>
+<li>Theoretical FLOPS = 16x8x16x2/4 x 170 x 1.82 Ghz = 316.8 TFLOPS</li>
+</ul>
+<h2 id="base">Base<a class="headerlink" href="#base" title="Permanent link">&para;</a></h2>
+<p>commit: f570bd12275eff736d3e0b9d5804a788b57a3a99</p>
+<p>fp16: 0.783 us (274.2 TFLOPS)</p>
+<ul>
+<li>Register: 168</li>
+<li>SMEM: 98.3k (blk_size: 128,128,64)</li>
+</ul>
+<p>bf16: 1.39 ms (155.6 TFLOPS)</p>
+<ul>
+<li>Register: 234</li>
+<li>SMEM: 98.3k (blk_size: 128,128,64)</li>
+</ul>
+<p>tma fp16: 0.784 us</p>
+<ul>
+<li>Register: 166</li>
+<li>SMEM: 49.28k (blk_size: 128,128,32)</li>
+</ul>
+<p>tma bf16: 1.38 ms</p>
+<ul>
+<li>Register: 230</li>
+<li>SMEM: 49.28k (blk_size: 128,128,32)</li>
+</ul>
+<h2 id="0x01-epilogue-use-smem">0x01. Epilogue use SMEM<a class="headerlink" href="#0x01-epilogue-use-smem" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Use STSM for R2S copy</li>
+<li>Use TMA Store for S2G copy</li>
+<li>For bf16, convert accumulator fp32 to bf16 in register before STSM</li>
+</ol>
+<p>commit: 7f4bcf4d21156f329f8c0f4a87d6a6f537f48282</p>
+<p>tma fp16: 0.830 us ()</p>
+<ul>
+<li>Register: 166</li>
+<li>SMEM: 82.0k (blk_size: 128,128,32)</li>
+</ul>
+<p>tma bf16: 1.43 ms</p>
+<ul>
+<li>Register: 230</li>
+<li>SMEM: 82.0k (blk_size: 128,128,32)</li>
+</ul>
+<p>SMEM 大小增加，使 1 个 SM 上只能调度 1 个 block，性能下降 5.8% (fp16) / 3.6% (bf16)</p>
 
 
 
