@@ -36,6 +36,58 @@ TFLOPS on 5090D:
    └─ nan 4860.038 _ZN7cutlass7Kernel2I66cutlass_80_tensorop_f16_s16816gemm_relu_f16_256x128_32x3_tn_align8EEvNT_6ParamsE
 ```
 
+```
+152.105 361432.388 ROOT
+├─ 163.805 33561.663 cuBLAS [M=8192, N=8192, K=4096]
+│  └─ nan 33561.663 _ZN7cutlass7Kernel2I65cutlass_80_tensorop_f16_s16816gemm_relu_f16_64x256_32x4_tn_align8EEvNT_6ParamsE
+├─ 164.485 33422.771 matmul_kernel [M=8192, N=8192, K=4096]
+├─ 142.180 38666.284 matmul_kernel_descriptor_persistent [M=8192, N=8192, K=4096]
+├─ 145.775 37712.702 matmul_kernel_descriptor_persistent_ws [M=8192, N=8192, K=4096]
+├─ 153.797 35745.615 matmul_kernel_persistent [M=8192, N=8192, K=4096]
+├─ 159.969 34366.454 matmul_kernel_tma [M=8192, N=8192, K=4096]
+├─ 142.289 38636.550 matmul_kernel_tma_persistent [M=8192, N=8192, K=4096]
+├─ 145.831 37698.195 matmul_kernel_tma_persistent_ws [M=8192, N=8192, K=4096]
+├─ 144.405 38070.502 matmul_kernel_tma_ws [M=8192, N=8192, K=4096]
+└─ 163.854 33551.651 torch [M=8192, N=8192, K=4096]
+   └─ nan 33551.651 _ZN7cutlass7Kernel2I65cutlass_80_tensorop_f16_s16816gemm_relu_f16_64x256_32x4_tn_align8EEvNT_6ParamsE
+```
+
+### Base
+
+--- Testing float16 ---
+GEMM average time over 10 iterations: 3.9855 ms
+GEMM average throughput over 10 iterations: 275877.2548 GFLOPS
+
+--- Testing bfloat16 ---
+GEMM average time over 10 iterations: 6.6677 ms
+GEMM average throughput over 10 iterations: 164901.8401 GFLOPS
+
+--- Testing float16 tma ---
+GEMM average time over 10 iterations: 3.9904 ms
+GEMM average throughput over 10 iterations: 275537.4408 GFLOPS
+
+--- Testing bfloat16 tma ---
+GEMM average time over 10 iterations: 6.6888 ms
+GEMM average throughput over 10 iterations: 164381.7855 GFLOPS
+
+### 去除tma 版本的访存:
+
+--- Testing float16 ---
+GEMM average time over 10 iterations: 3.9882 ms
+GEMM average throughput over 10 iterations: 275693.0684 GFLOPS
+
+--- Testing bfloat16 ---
+GEMM average time over 10 iterations: 6.6730 ms
+GEMM average throughput over 10 iterations: 164770.2607 GFLOPS
+
+--- Testing float16 tma ---
+GEMM average time over 10 iterations: 3.9108 ms
+GEMM average throughput over 10 iterations: 281150.4731 GFLOPS (+2.0%)
+
+--- Testing bfloat16 tma ---
+GEMM average time over 10 iterations: 6.5445 ms
+GEMM average throughput over 10 iterations: 168005.7973 GFLOPS (+2.2%)
+
 5090 为何 persistent 表现比 non-persistent 要更差？
 
 ```
