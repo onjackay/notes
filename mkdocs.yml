@@ -7,6 +7,10 @@ edit_uri: ""
 
 nav:
   - Home: index.md
+  - CuTe:
+      - cute/cute-layout.md
+      - cute/cute-gemm-basic.md
+      - cute/cute-copy.md
   - C++:
       - cpp/ptx.md
       - cpp/async-cuda.md
@@ -18,8 +22,6 @@ nav:
       - notes/vllm.md
       - notes/papers.md
       - notes/quantization.md
-      - notes/cute.md
-      - notes/cute_detail.md
       - notes/rmsnorm.md
       - notes/l40.md
       - notes/note.md
