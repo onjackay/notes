@@ -1,0 +1,1524 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Personal notes and documentation">
+      
+      
+        <meta name="author" content="onjackay">
+      
+      
+      
+        <link rel="prev" href="../cute-gemm-basic/">
+      
+      
+        <link rel="next" href="../../cpp/ptx/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.20">
+    
+    
+      
+        <title>CuTe 之 Copy - My Notes</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.e53b48f4.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#cute-copy" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="My Notes" class="md-header__button md-logo" aria-label="My Notes" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            My Notes
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              CuTe 之 Copy
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/onjackay/notes" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../cute-layout/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  CuTe
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../cpp/ptx/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  C++
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../notes/fused_moe/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Notes
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../fire/theory/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  FIRE
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="https://onjackay.github.io/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  About
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="My Notes" class="md-nav__button md-logo" aria-label="My Notes" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    My Notes
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/onjackay/notes" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    CuTe
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            CuTe
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cute-layout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    CuTe 之 Layout
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cute-gemm-basic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    CuTe GEMM Basic
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    CuTe 之 Copy
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    CuTe 之 Copy
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prologue" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prologue
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#copy-operation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Copy Operation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#copy-atom" class="md-nav__link">
+    <span class="md-ellipsis">
+      Copy Atom
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tiled-copy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tiled Copy
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    C++
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            C++
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpp/ptx/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Parallel Thread Execution (PTX)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpp/async-cuda/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Asynchronous CUDA Programming
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpp/crtp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Curiously Recurring Template Pattern (CRTP)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Notes
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Notes
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notes/fused_moe/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Fused MoE Kernels
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notes/flash-attention/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Flash Attention
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notes/mla/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Multi-head Latent Attention (MLA)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notes/vllm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Experiment
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notes/papers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Papers
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notes/quantization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Quantization
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notes/rmsnorm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    RMSNorm
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notes/l40/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    L40 Experiments
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notes/note/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Note
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notes/tmux-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    tmux: A Comprehensive Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    FIRE
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            FIRE
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../fire/theory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Initialization
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://onjackay.github.io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    About
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="cute-copy">CuTe 之 Copy<a class="headerlink" href="#cute-copy" title="Permanent link">&para;</a></h1>
+<h2 id="prologue">Prologue<a class="headerlink" href="#prologue" title="Permanent link">&para;</a></h2>
+<ol>
+<li><code>thrCopy</code> 的 <code>partition_S</code>, <code>partition_D</code>, <code>retile</code> 分别接受怎样的输入，做了什么操作，目的是什么？</li>
+<li>从而可以回答：在 partition 前，dst 和 src 的 layout 分别需要满足什么限制，才能产生我们期望的 per-thread 的 layout？</li>
+</ol>
+<h2 id="copy-operation">Copy Operation<a class="headerlink" href="#copy-operation" title="Permanent link">&para;</a></h2>
+<p>和 mma 一样，copy 抽象的最底层也是 Copy Operation。</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1">// cute/arch/copy_sm75.hpp</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">struct</span><span class="w"> </span><span class="nc">SM75_U32x4_LDSM_N</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">{</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">SRegisters</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">uint128_t</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">DRegisters</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">uint32_t</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="n">CUTE_HOST_DEVICE</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="kt">void</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="n">copy</span><span class="p">(</span><span class="n">uint128_t</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="n">smem_src</span><span class="p">,</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">       </span><span class="kt">uint32_t</span><span class="o">&amp;</span><span class="w"> </span><span class="n">dst0</span><span class="p">,</span><span class="w"> </span><span class="kt">uint32_t</span><span class="o">&amp;</span><span class="w"> </span><span class="n">dst1</span><span class="p">,</span><span class="w"> </span><span class="kt">uint32_t</span><span class="o">&amp;</span><span class="w"> </span><span class="n">dst2</span><span class="p">,</span><span class="w"> </span><span class="kt">uint32_t</span><span class="o">&amp;</span><span class="w"> </span><span class="n">dst3</span><span class="p">)</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">  </span><span class="p">{</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="cp">#if defined(CUTE_ARCH_LDSM_SM75_ACTIVATED)</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">smem_int_ptr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cast_smem_ptr_to_uint</span><span class="p">(</span><span class="o">&amp;</span><span class="n">smem_src</span><span class="p">);</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="k">asm</span><span class="w"> </span><span class="k">volatile</span><span class="w"> </span><span class="p">(</span><span class="s">&quot;ldmatrix.sync.aligned.x4.m8n8.shared.b16 {%0, %1, %2, %3}, [%4];</span><span class="se">\n</span><span class="s">&quot;</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">        </span><span class="o">:</span><span class="w"> </span><span class="s">&quot;=r&quot;</span><span class="p">(</span><span class="n">dst0</span><span class="p">),</span><span class="w"> </span><span class="s">&quot;=r&quot;</span><span class="p">(</span><span class="n">dst1</span><span class="p">),</span><span class="w"> </span><span class="s">&quot;=r&quot;</span><span class="p">(</span><span class="n">dst2</span><span class="p">),</span><span class="w"> </span><span class="s">&quot;=r&quot;</span><span class="p">(</span><span class="n">dst3</span><span class="p">)</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">        </span><span class="o">:</span><span class="w">  </span><span class="s">&quot;r&quot;</span><span class="p">(</span><span class="n">smem_int_ptr</span><span class="p">));</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="cp">#else</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">    </span><span class="n">CUTE_INVALID_CONTROL_PATH</span><span class="p">(</span><span class="s">&quot;Trying to use ldmatrix without CUTE_ARCH_LDSM_SM75_ACTIVATED.&quot;</span><span class="p">);</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="cp">#endif</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="p">};</span>
+</code></pre></div>
+<p>Copy Operation 位置在 <code>cute/arch/mma_sm*</code> 文件中，是 ptx 指令的封装。
+SRegisters/DRegisters 指明了 <code>copy()</code> 方法的参数类型与数量。</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">template</span><span class="w"> </span><span class="o">&lt;&gt;</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">struct</span><span class="w"> </span><span class="nc">Copy_Traits</span><span class="o">&lt;</span><span class="n">SM75_U32x4_LDSM_N</span><span class="o">&gt;</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="p">{</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="c1">// Logical thread id to thread idx (warp)</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">ThrID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Layout</span><span class="o">&lt;</span><span class="n">_32</span><span class="o">&gt;</span><span class="p">;</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="c1">// Map from (src-thr,src-val) to bit</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">SrcLayout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Layout</span><span class="o">&lt;</span><span class="n">Shape</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">_32</span><span class="p">,</span><span class="n">_128</span><span class="o">&gt;</span><span class="p">,</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">                           </span><span class="n">Stride</span><span class="o">&lt;</span><span class="n">_128</span><span class="p">,</span><span class="w">  </span><span class="n">_1</span><span class="o">&gt;&gt;</span><span class="p">;</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span><span class="c1">// Map from (dst-thr,dst-val) to bit</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">DstLayout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Layout</span><span class="o">&lt;</span><span class="n">Shape</span><span class="w"> </span><span class="o">&lt;</span><span class="n">_32</span><span class="p">,</span><span class="n">Shape</span><span class="w"> </span><span class="o">&lt;</span><span class="n">_32</span><span class="p">,</span><span class="w">   </span><span class="n">_4</span><span class="o">&gt;&gt;</span><span class="p">,</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">                           </span><span class="n">Stride</span><span class="o">&lt;</span><span class="n">_32</span><span class="p">,</span><span class="n">Stride</span><span class="o">&lt;</span><span class="w"> </span><span class="n">_1</span><span class="p">,</span><span class="n">_1024</span><span class="o">&gt;&gt;&gt;</span><span class="p">;</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">  </span><span class="c1">// Reference map from (thr,val) to bit</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">RefLayout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DstLayout</span><span class="p">;</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="p">};</span>
+</code></pre></div>
+<p>Copy Trait 为 Operation 描述了指令对应的 layout 信息。
+<code>ThrId</code> 表示指令 issue 所需的线程数量。
+<code>SrcLayout</code> 是在 bit 视角下，src 的 TV-layout。
+<code>DstLayout</code> 是在 bit 视角下，dst 的 TV-layout。</p>
+<p>对于 <code>UniversalCopy</code> 和 <code>cp.async</code> 这类一般的 Op，<code>SrcLayout</code> 和 <code>DstLayout</code> 是相同的。
+但是像 <code>ldmatrix</code> 这类，每个线程的 src 和 dst 的视图不同，我们需要确定一个“坐标系“作为参照，这就是 <code>RefLayout</code>。
+对于 <code>ldmatrix</code> 这个例子，<code>RefLayout</code> 等于 <code>DstLayout</code>。</p>
+<h2 id="copy-atom">Copy Atom<a class="headerlink" href="#copy-atom" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1">// cute/atom/copy_atom.hpp</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">class</span><span class="w"> </span><span class="nc">CopyOperation</span><span class="p">,</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">CopyInternalType</span><span class="o">&gt;</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">struct</span><span class="w"> </span><span class="nc">Copy_Atom</span><span class="o">&lt;</span><span class="n">CopyOperation</span><span class="p">,</span><span class="w"> </span><span class="n">CopyInternalType</span><span class="o">&gt;</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">Copy_Atom</span><span class="o">&lt;</span><span class="n">Copy_Traits</span><span class="o">&lt;</span><span class="n">CopyOperation</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">CopyInternalType</span><span class="o">&gt;</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="p">{};</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">class</span><span class="p">...</span><span class="w"> </span><span class="n">Args</span><span class="p">,</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">CopyInternalType</span><span class="o">&gt;</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="k">struct</span><span class="w"> </span><span class="nc">Copy_Atom</span><span class="o">&lt;</span><span class="n">Copy_Traits</span><span class="o">&lt;</span><span class="n">Args</span><span class="p">...</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">CopyInternalType</span><span class="o">&gt;</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span><span class="o">:</span><span class="w"> </span><span class="n">Copy_Traits</span><span class="o">&lt;</span><span class="n">Args</span><span class="p">...</span><span class="o">&gt;</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="p">{</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Traits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Copy_Traits</span><span class="o">&lt;</span><span class="n">Args</span><span class="p">...</span><span class="o">&gt;</span><span class="p">;</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">  </span><span class="c1">// Bit and Thr layouts from the Copy_Traits</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">ThrID</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">Traits</span><span class="o">::</span><span class="n">ThrID</span><span class="p">;</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">BitLayoutSrc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">Traits</span><span class="o">::</span><span class="n">SrcLayout</span><span class="p">;</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">BitLayoutDst</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">Traits</span><span class="o">::</span><span class="n">DstLayout</span><span class="p">;</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">BitLayoutRef</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">Traits</span><span class="o">::</span><span class="n">RefLayout</span><span class="p">;</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">ValType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CopyInternalType</span><span class="p">;</span>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">ValLayoutSrc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">decltype</span><span class="p">(</span><span class="n">recast_layout</span><span class="o">&lt;</span><span class="n">uint1_t</span><span class="p">,</span><span class="w"> </span><span class="n">ValType</span><span class="o">&gt;</span><span class="p">(</span><span class="n">BitLayoutSrc</span><span class="p">{}));</span>
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">ValLayoutDst</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">decltype</span><span class="p">(</span><span class="n">recast_layout</span><span class="o">&lt;</span><span class="n">uint1_t</span><span class="p">,</span><span class="w"> </span><span class="n">ValType</span><span class="o">&gt;</span><span class="p">(</span><span class="n">BitLayoutDst</span><span class="p">{}));</span>
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">ValLayoutRef</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">decltype</span><span class="p">(</span><span class="n">recast_layout</span><span class="o">&lt;</span><span class="n">uint1_t</span><span class="p">,</span><span class="w"> </span><span class="n">ValType</span><span class="o">&gt;</span><span class="p">(</span><span class="n">BitLayoutRef</span><span class="p">{}));</span>
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a><span class="w">  </span><span class="n">CUTE_STATIC_ASSERT_V</span><span class="p">(</span><span class="n">size</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">(</span><span class="n">ValLayoutSrc</span><span class="p">{})</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">ThrID</span><span class="p">{}),</span><span class="w"> </span><span class="s">&quot;CopyOperation is not valid for Src of ValType.&quot;</span><span class="p">);</span>
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a><span class="w">  </span><span class="n">CUTE_STATIC_ASSERT_V</span><span class="p">(</span><span class="n">size</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">(</span><span class="n">ValLayoutDst</span><span class="p">{})</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">ThrID</span><span class="p">{}),</span><span class="w"> </span><span class="s">&quot;CopyOperation is not valid for Dst of ValType.&quot;</span><span class="p">);</span>
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a><span class="w">  </span><span class="n">CUTE_STATIC_ASSERT_V</span><span class="p">(</span><span class="n">size</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">(</span><span class="n">ValLayoutRef</span><span class="p">{})</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">ThrID</span><span class="p">{}),</span><span class="w"> </span><span class="s">&quot;CopyOperation is not valid for Ref of ValType.&quot;</span><span class="p">);</span>
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>
+<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a><span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">NumValSrc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">size</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">(</span><span class="n">ValLayoutSrc</span><span class="p">{});</span>
+<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a><span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">NumValDst</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">size</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">(</span><span class="n">ValLayoutDst</span><span class="p">{});</span>
+</code></pre></div>
+<p>Copy Atom 是 Copy Operation 与 dtype 的组合。
+Copy Atom 通过 Copy Trait 获取 Copy Op 的 layout 信息，把 Op 中 bit 视角下的 TV-layout 转换为特定 dtype 视角下的 TV-layout，
+即 <code>ValLayoutSrc</code>, <code>ValLayoutDst</code>, 和 <code>ValLayoutRef</code>。
+<code>NumValSrc</code> 和 <code>NumValDst</code> 取对应 TV-layout rank-1 的大小，即每个线程负责的 src/dst 元素数量。</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="w">  </span><span class="c1">// Check and call instruction, or recurse</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">class</span><span class="w"> </span><span class="nc">SEngine</span><span class="p">,</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">SLayout</span><span class="p">,</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">            </span><span class="k">class</span><span class="w"> </span><span class="nc">DEngine</span><span class="p">,</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">DLayout</span><span class="o">&gt;</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="n">CUTE_HOST_DEVICE</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span><span class="kt">void</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="n">call</span><span class="p">(</span><span class="n">Tensor</span><span class="o">&lt;</span><span class="n">SEngine</span><span class="p">,</span><span class="n">SLayout</span><span class="o">&gt;</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="n">src</span><span class="p">,</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">       </span><span class="n">Tensor</span><span class="o">&lt;</span><span class="n">DEngine</span><span class="p">,</span><span class="n">DLayout</span><span class="o">&gt;</span><span class="w">      </span><span class="o">&amp;</span><span class="w"> </span><span class="n">dst</span><span class="p">)</span><span class="w"> </span><span class="k">const</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span><span class="p">{</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">    </span><span class="k">static_assert</span><span class="p">(</span><span class="n">SLayout</span><span class="o">::</span><span class="n">rank</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Expected rank-1 src tensor&quot;</span><span class="p">);</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">    </span><span class="k">static_assert</span><span class="p">(</span><span class="n">DLayout</span><span class="o">::</span><span class="n">rank</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Expected rank-1 dst tensor&quot;</span><span class="p">);</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="p">(</span><span class="n">is_constant</span><span class="o">&lt;</span><span class="n">NumValSrc</span><span class="p">,</span><span class="w"> </span><span class="k">decltype</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">src</span><span class="p">))</span><span class="o">&gt;::</span><span class="n">value</span><span class="w"> </span><span class="o">||</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">                  </span><span class="n">is_constant</span><span class="o">&lt;</span><span class="n">NumValDst</span><span class="p">,</span><span class="w"> </span><span class="k">decltype</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">dst</span><span class="p">))</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">      </span><span class="c1">// Dispatch to unpack to execute instruction</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">copy_unpack</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="n">Traits</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;&gt;</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">),</span><span class="w"> </span><span class="n">src</span><span class="p">,</span><span class="w"> </span><span class="n">dst</span><span class="p">);</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="p">(</span><span class="n">is_tuple</span><span class="o">&lt;</span><span class="k">decltype</span><span class="p">(</span><span class="n">shape</span><span class="p">(</span><span class="n">src</span><span class="p">))</span><span class="o">&gt;::</span><span class="n">value</span><span class="w"> </span><span class="o">&amp;&amp;</span>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="w">                         </span><span class="n">is_tuple</span><span class="o">&lt;</span><span class="k">decltype</span><span class="p">(</span><span class="n">shape</span><span class="p">(</span><span class="n">dst</span><span class="p">))</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="w">      </span><span class="c1">// If the size of the src/dst doesn&#39;t match the instruction,</span>
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="w">      </span><span class="c1">//   recurse this rank-1 layout by peeling off the mode</span>
+<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="w">      </span><span class="c1">//   ((A,B,C,...)) -&gt; (A,B,C,...)</span>
+<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a><span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">copy</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">,</span><span class="w"> </span><span class="n">tensor</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">(</span><span class="n">src</span><span class="p">),</span><span class="w"> </span><span class="n">tensor</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">(</span><span class="n">dst</span><span class="p">));</span>
+<a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a><span class="w">      </span><span class="k">static_assert</span><span class="p">(</span><span class="n">dependent_false</span><span class="o">&lt;</span><span class="n">SEngine</span><span class="o">&gt;</span><span class="p">,</span>
+<a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a><span class="w">                    </span><span class="s">&quot;CopyAtom: Src/Dst partitioning does not match the instruction requirement.&quot;</span><span class="p">);</span>
+<a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a><span class="w">  </span><span class="p">}</span>
+</code></pre></div>
+<p><code>Copy_Atom::call()</code> 要求 src/dst 都是 1-rank tensor，然后判断直接发射硬件 copy 指令或者递归分解。</p>
+<p>如果 src/dst 的大小恰好满足 Copy Atom 的大小：调用 <code>copy_unpack(static_cast&lt;Traits const&amp;&gt;(*this), src, dst)</code> 直接发射硬件 copy 指令。</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1">// cute/atom/copy_trait.hpp</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">class</span><span class="w"> </span><span class="nc">AnyCPYTraits</span><span class="p">,</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">          </span><span class="k">class</span><span class="w"> </span><span class="nc">SEngine</span><span class="p">,</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">SLayout</span><span class="p">,</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">          </span><span class="k">class</span><span class="w"> </span><span class="nc">DEngine</span><span class="p">,</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">DLayout</span><span class="o">&gt;</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">CUTE_HOST_DEVICE</span><span class="w"> </span><span class="k">constexpr</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="kt">void</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">copy_unpack</span><span class="p">(</span><span class="n">AnyCPYTraits</span><span class="w">            </span><span class="k">const</span><span class="o">&amp;</span><span class="p">,</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">            </span><span class="n">Tensor</span><span class="o">&lt;</span><span class="n">SEngine</span><span class="p">,</span><span class="n">SLayout</span><span class="o">&gt;</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="n">src</span><span class="p">,</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">            </span><span class="n">Tensor</span><span class="o">&lt;</span><span class="n">DEngine</span><span class="p">,</span><span class="n">DLayout</span><span class="o">&gt;</span><span class="w">      </span><span class="o">&amp;</span><span class="w"> </span><span class="n">dst</span><span class="p">)</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="p">{</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">CopyOp</span><span class="w">       </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">CPY_Op</span><span class="o">&lt;</span><span class="n">AnyCPYTraits</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">;</span><span class="w">  </span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">RegistersSrc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">CopyOp</span><span class="o">::</span><span class="n">SRegisters</span><span class="p">;</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">RegistersDst</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">CopyOp</span><span class="o">::</span><span class="n">DRegisters</span><span class="p">;</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">RegTypeSrc</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">remove_extent</span><span class="o">&lt;</span><span class="n">RegistersSrc</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">;</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">RegTypeDst</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">remove_extent</span><span class="o">&lt;</span><span class="n">RegistersDst</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">;</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">  </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">RegNumSrc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">extent</span><span class="o">&lt;</span><span class="n">RegistersSrc</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">;</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">  </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">RegNumDst</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">extent</span><span class="o">&lt;</span><span class="n">RegistersDst</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">;</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="w">  </span><span class="n">Tensor</span><span class="w"> </span><span class="n">rS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">recast</span><span class="o">&lt;</span><span class="n">RegTypeSrc</span><span class="o">&gt;</span><span class="p">(</span><span class="n">src</span><span class="p">);</span>
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="w">  </span><span class="n">Tensor</span><span class="w"> </span><span class="n">rD</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">recast</span><span class="o">&lt;</span><span class="n">RegTypeDst</span><span class="o">&gt;</span><span class="p">(</span><span class="n">dst</span><span class="p">);</span>
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>
+<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="w">  </span><span class="n">CUTE_STATIC_ASSERT_V</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">rS</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">Int</span><span class="o">&lt;</span><span class="n">RegNumSrc</span><span class="o">&gt;</span><span class="p">{},</span>
+<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="w">    </span><span class="s">&quot;Copy_Traits: src failed to vectorize into registers. Layout is incompatible with this CopyOp.&quot;</span><span class="p">);</span>
+<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a><span class="w">  </span><span class="n">CUTE_STATIC_ASSERT_V</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">rD</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">Int</span><span class="o">&lt;</span><span class="n">RegNumDst</span><span class="o">&gt;</span><span class="p">{},</span>
+<a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="w">    </span><span class="s">&quot;Copy_Traits: dst failed to vectorize into registers. Layout is incompatible with this CopyOp.&quot;</span><span class="p">);</span>
+<a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a>
+<a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a><span class="w">  </span><span class="n">detail</span><span class="o">::</span><span class="n">explode</span><span class="p">(</span><span class="n">detail</span><span class="o">::</span><span class="n">CallCOPY</span><span class="o">&lt;</span><span class="n">CopyOp</span><span class="o">&gt;</span><span class="p">{},</span>
+<a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a><span class="w">                  </span><span class="n">rS</span><span class="p">,</span><span class="w"> </span><span class="n">make_int_sequence</span><span class="o">&lt;</span><span class="n">RegNumSrc</span><span class="o">&gt;</span><span class="p">{},</span>
+<a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a><span class="w">                  </span><span class="n">rD</span><span class="p">,</span><span class="w"> </span><span class="n">make_int_sequence</span><span class="o">&lt;</span><span class="n">RegNumDst</span><span class="o">&gt;</span><span class="p">{});</span>
+<a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a><span class="p">}</span>
+</code></pre></div>
+<p><code>copy_unpack</code> 将 src/dst 转换为 Copy Op 中 SRegisters/DRegisters 的类型，然后进入 explode 把 tensor 展开，调用 Copy Op 的 <code>copy()</code>。</p>
+<p>否则，调用 <code>copy(*this, tensor&lt;0&gt;(src), tensor&lt;0&gt;(dst))</code>，去掉最外层的 1-rank shape 后回到 <code>copy.hpp</code> 中的自由函数：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1">// cute/algorithm/copy.hpp</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">class</span><span class="p">...</span><span class="w"> </span><span class="n">CopyArgs</span><span class="p">,</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">          </span><span class="k">class</span><span class="w"> </span><span class="nc">SrcEngine</span><span class="p">,</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">SrcLayout</span><span class="p">,</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">          </span><span class="k">class</span><span class="w"> </span><span class="nc">DstEngine</span><span class="p">,</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">DstLayout</span><span class="o">&gt;</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">CUTE_HOST_DEVICE</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="kt">void</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">copy</span><span class="p">(</span><span class="n">Copy_Atom</span><span class="o">&lt;</span><span class="n">CopyArgs</span><span class="p">...</span><span class="o">&gt;</span><span class="w">       </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="n">copy_atom</span><span class="p">,</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">     </span><span class="n">Tensor</span><span class="o">&lt;</span><span class="n">SrcEngine</span><span class="p">,</span><span class="w"> </span><span class="n">SrcLayout</span><span class="o">&gt;</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="n">src</span><span class="p">,</span><span class="w">       </span><span class="c1">// (V,Rest...)</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">     </span><span class="n">Tensor</span><span class="o">&lt;</span><span class="n">DstEngine</span><span class="p">,</span><span class="w"> </span><span class="n">DstLayout</span><span class="o">&gt;</span><span class="w">      </span><span class="o">&amp;</span><span class="w"> </span><span class="n">dst</span><span class="p">)</span><span class="w">       </span><span class="c1">// (V,Rest...)</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="p">{</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">  </span><span class="k">static_assert</span><span class="p">(</span><span class="n">SrcLayout</span><span class="o">::</span><span class="n">rank</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">DstLayout</span><span class="o">::</span><span class="n">rank</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;CopyAtom rank-mismatch.&quot;</span><span class="p">);</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="p">(</span><span class="n">SrcLayout</span><span class="o">::</span><span class="n">rank</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">   </span><span class="c1">// Dispatch the copy</span>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="w">    </span><span class="n">copy_atom</span><span class="p">.</span><span class="n">call</span><span class="p">(</span><span class="n">src</span><span class="p">,</span><span class="w"> </span><span class="n">dst</span><span class="p">);</span>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">                                </span><span class="c1">// Loop over all but the first mode</span>
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="w">    </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">R</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SrcLayout</span><span class="o">::</span><span class="n">rank</span><span class="p">;</span>
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="w">    </span><span class="n">Tensor</span><span class="w"> </span><span class="n">src_v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">group_modes</span><span class="o">&lt;</span><span class="mi">1</span><span class="p">,</span><span class="n">R</span><span class="o">&gt;</span><span class="p">(</span><span class="n">src</span><span class="p">);</span>
+<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="w">    </span><span class="n">Tensor</span><span class="w"> </span><span class="n">dst_v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">group_modes</span><span class="o">&lt;</span><span class="mi">1</span><span class="p">,</span><span class="n">R</span><span class="o">&gt;</span><span class="p">(</span><span class="n">dst</span><span class="p">);</span>
+<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>
+<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="p">(</span><span class="n">is_static</span><span class="o">&lt;</span><span class="k">decltype</span><span class="p">(</span><span class="n">shape</span><span class="p">(</span><span class="n">src_v</span><span class="p">))</span><span class="o">&gt;::</span><span class="n">value</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">is_static</span><span class="o">&lt;</span><span class="k">decltype</span><span class="p">(</span><span class="n">shape</span><span class="p">(</span><span class="n">dst_v</span><span class="p">))</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a><span class="w">      </span><span class="c1">// AutoFilter on the Rest-mode</span>
+<a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a><span class="w">      </span><span class="k">auto</span><span class="w"> </span><span class="n">dst_null</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nullspace</span><span class="p">(</span><span class="n">layout</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">(</span><span class="n">dst_v</span><span class="p">));</span>
+<a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a>
+<a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a><span class="w">      </span><span class="n">Tensor</span><span class="w"> </span><span class="n">dst_n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">zipped_divide</span><span class="p">(</span><span class="n">dst_v</span><span class="p">,</span><span class="w"> </span><span class="n">make_tile</span><span class="p">(</span><span class="n">shape</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">(</span><span class="n">dst_v</span><span class="p">),</span><span class="w"> </span><span class="n">dst_null</span><span class="p">));</span><span class="w">  </span><span class="c1">// ((V, NLL), (_1, Rest))</span>
+<a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a><span class="w">      </span><span class="n">Tensor</span><span class="w"> </span><span class="n">src_n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">zipped_divide</span><span class="p">(</span><span class="n">src_v</span><span class="p">,</span><span class="w"> </span><span class="n">make_tile</span><span class="p">(</span><span class="n">shape</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">(</span><span class="n">src_v</span><span class="p">),</span><span class="w"> </span><span class="n">dst_null</span><span class="p">));</span><span class="w">  </span><span class="c1">// ((V, NLL), (_1, Rest))</span>
+<a id="__codelineno-5-26" name="__codelineno-5-26" href="#__codelineno-5-26"></a><span class="w">      </span><span class="n">Tensor</span><span class="w"> </span><span class="n">dst_c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dst_n</span><span class="p">(</span><span class="n">make_coord</span><span class="p">(</span><span class="n">_</span><span class="p">,</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">{}),</span><span class="n">make_coord</span><span class="p">(</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">{},</span><span class="n">_</span><span class="p">));</span><span class="w">        </span><span class="c1">// (V, Rest)</span>
+<a id="__codelineno-5-27" name="__codelineno-5-27" href="#__codelineno-5-27"></a><span class="w">      </span><span class="n">Tensor</span><span class="w"> </span><span class="n">src_c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">src_n</span><span class="p">(</span><span class="n">make_coord</span><span class="p">(</span><span class="n">_</span><span class="p">,</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">{}),</span><span class="n">make_coord</span><span class="p">(</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">{},</span><span class="n">_</span><span class="p">));</span><span class="w">        </span><span class="c1">// (V, Rest)</span>
+<a id="__codelineno-5-28" name="__codelineno-5-28" href="#__codelineno-5-28"></a>
+<a id="__codelineno-5-29" name="__codelineno-5-29" href="#__codelineno-5-29"></a><span class="w">      </span><span class="n">CUTE_UNROLL</span>
+<a id="__codelineno-5-30" name="__codelineno-5-30" href="#__codelineno-5-30"></a><span class="w">      </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">size</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">(</span><span class="n">dst_c</span><span class="p">);</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-31" name="__codelineno-5-31" href="#__codelineno-5-31"></a><span class="w">        </span><span class="n">copy_atom</span><span class="p">.</span><span class="n">call</span><span class="p">(</span><span class="n">src_c</span><span class="p">(</span><span class="n">_</span><span class="p">,</span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="n">dst_c</span><span class="p">(</span><span class="n">_</span><span class="p">,</span><span class="n">i</span><span class="p">));</span>
+<a id="__codelineno-5-32" name="__codelineno-5-32" href="#__codelineno-5-32"></a><span class="w">      </span><span class="p">}</span>
+<a id="__codelineno-5-33" name="__codelineno-5-33" href="#__codelineno-5-33"></a><span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-34" name="__codelineno-5-34" href="#__codelineno-5-34"></a><span class="w">      </span><span class="n">CUTE_UNROLL</span>
+<a id="__codelineno-5-35" name="__codelineno-5-35" href="#__codelineno-5-35"></a><span class="w">      </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">size</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">(</span><span class="n">dst_v</span><span class="p">);</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-36" name="__codelineno-5-36" href="#__codelineno-5-36"></a><span class="w">        </span><span class="n">copy_atom</span><span class="p">.</span><span class="n">call</span><span class="p">(</span><span class="n">src_v</span><span class="p">(</span><span class="n">_</span><span class="p">,</span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="n">dst_v</span><span class="p">(</span><span class="n">_</span><span class="p">,</span><span class="n">i</span><span class="p">));</span>
+<a id="__codelineno-5-37" name="__codelineno-5-37" href="#__codelineno-5-37"></a><span class="w">      </span><span class="p">}</span>
+<a id="__codelineno-5-38" name="__codelineno-5-38" href="#__codelineno-5-38"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-5-39" name="__codelineno-5-39" href="#__codelineno-5-39"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-5-40" name="__codelineno-5-40" href="#__codelineno-5-40"></a><span class="p">}</span>
+</code></pre></div>
+<p>如果这时 rank 仍等于 1，则直接进入 <code>Copy_Atom::call()</code>。
+否则，会对除了 mode-0 以外的 mode 循环，然后对 mode-0 调用 <code>Copy_Atom::call()</code>。
+从此处可见，调用 <code>cute::copy()</code> 始终需要将每次 atom 操作的 src/dst layout 放在 mode-0，其他 mode 代表 atom 循环次数。</p>
+<p>在 src/dst 的 layout 是静态的时候，layout 中的 nullspace（stride=0 的空间）会被过滤掉，跳过在重复地址上的循环。
+对于动态 layout 的情况，编译期无法计算 nullspace，此时只能朴素地遍历所有的元素。</p>
+<h2 id="tiled-copy">Tiled Copy<a class="headerlink" href="#tiled-copy" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">class</span><span class="w"> </span><span class="nc">Copy_Atom</span><span class="p">,</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">          </span><span class="k">class</span><span class="w"> </span><span class="nc">LayoutCopy_TV</span><span class="p">,</span><span class="w">  </span><span class="c1">// (tid,vid) -&gt; coord   [Need not be 2D...]</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">          </span><span class="k">class</span><span class="w"> </span><span class="nc">ShapeTiler_MN</span><span class="o">&gt;</span><span class="w">  </span><span class="c1">// coord space</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="k">struct</span><span class="w"> </span><span class="nc">TiledCopy</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">Copy_Atom</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="p">{</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">  </span><span class="c1">// Layout information from the CopyAtom</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">AtomThrID</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">Copy_Atom</span><span class="o">::</span><span class="n">ThrID</span><span class="p">;</span><span class="w">        </span><span class="c1">// thrid -&gt; thr_idx</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">AtomLayoutSrc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">Copy_Atom</span><span class="o">::</span><span class="n">ValLayoutSrc</span><span class="p">;</span><span class="w"> </span><span class="c1">// (thr,val) -&gt; offset</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">AtomLayoutDst</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">Copy_Atom</span><span class="o">::</span><span class="n">ValLayoutDst</span><span class="p">;</span><span class="w"> </span><span class="c1">// (thr,val) -&gt; offset</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">AtomLayoutRef</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">Copy_Atom</span><span class="o">::</span><span class="n">ValLayoutRef</span><span class="p">;</span><span class="w"> </span><span class="c1">// (thr,val) -&gt; offset</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">AtomNumThr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">decltype</span><span class="p">(</span><span class="n">size</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">(</span><span class="n">AtomLayoutRef</span><span class="p">{}));</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">AtomNumVal</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">decltype</span><span class="p">(</span><span class="n">size</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">(</span><span class="n">AtomLayoutRef</span><span class="p">{}));</span>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="w">  </span><span class="c1">// Layout information for the TiledCopy</span>
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Tiler_MN</span><span class="w">       </span><span class="o">=</span><span class="w"> </span><span class="n">ShapeTiler_MN</span><span class="p">;</span>
+<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">TiledLayout_TV</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">LayoutCopy_TV</span><span class="p">;</span>
+<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">TiledNumThr</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="k">decltype</span><span class="p">(</span><span class="n">size</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">(</span><span class="n">TiledLayout_TV</span><span class="p">{}));</span>
+<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a><span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">TiledNumVal</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="k">decltype</span><span class="p">(</span><span class="n">size</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">(</span><span class="n">TiledLayout_TV</span><span class="p">{}));</span>
+<a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>
+<a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a><span class="w">  </span><span class="n">CUTE_STATIC_ASSERT_V</span><span class="p">(</span><span class="n">TiledNumThr</span><span class="p">{}</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">AtomNumThr</span><span class="p">{}</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">{},</span><span class="w"> </span><span class="s">&quot;TiledCopy uses too few thrs for selected CopyAtom&quot;</span><span class="p">);</span>
+<a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a><span class="w">  </span><span class="n">CUTE_STATIC_ASSERT_V</span><span class="p">(</span><span class="n">TiledNumVal</span><span class="p">{}</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">AtomNumVal</span><span class="p">{}</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">{},</span><span class="w"> </span><span class="s">&quot;TiledCopy uses too few vals for selected CopyAtom&quot;</span><span class="p">);</span>
+</code></pre></div>
+<p>对单个 Copy Atom 进行扩展，就得到了 Tiled Copy。
+扩展发生在两个维度上：线程数量上的扩展 (AtomNumThr -&gt; TiledNumThr)，和单一线程上多次 Atom 的扩展 (AtomNumVal -&gt; TiledNumVal)。
+这两个扩展表现在构造参数 TV-Layout 上，T 的 size 代表线程数量，而 V 的 size 代表单一线程处理的元素个数。</p>
+<p>另一个构造参数 TilerMN 表示整个 Tiled Copy 的块大小。</p>
+<p>构造参数使用的 TV-Layout 是相对于 atom 的 ref layout 的，那么当 src/dst layout 不等于 ref layout 时，相对于 src/dst layout 的 TV-Layout 则需要进行转换。
+以 src 为例：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="w">  </span><span class="c1">// Tile a tensor or a layout from shape</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="c1">//   ((TileM,TileN,...), (RestM,RestN,...))</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="c1">// to shape</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span><span class="c1">//   (Thr,(FrgV,FrgX),(RestM,RestN,...))</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">class</span><span class="w"> </span><span class="nc">Tensor</span><span class="p">,</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">Ref2TrgLayout</span><span class="o">&gt;</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">  </span><span class="n">CUTE_HOST_DEVICE</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="k">static</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">  </span><span class="k">auto</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">  </span><span class="n">tile2thrfrg</span><span class="p">(</span><span class="n">Tensor</span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">tensor</span><span class="p">,</span><span class="w"> </span><span class="n">Ref2TrgLayout</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="n">ref2trg</span><span class="p">)</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">  </span><span class="p">{</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">    </span><span class="c1">// Take the thrs/vals that the atom is interested in</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="w">    </span><span class="c1">// NOTE: Assumes the AtomNumThr are contiguous and identity within TiledThrID</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">atom_layout_TV</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">zipped_divide</span><span class="p">(</span><span class="n">TiledLayout_TV</span><span class="p">{},</span><span class="w"> </span><span class="n">make_shape</span><span class="p">(</span><span class="n">AtomNumThr</span><span class="p">{},</span><span class="w"> </span><span class="n">AtomNumVal</span><span class="p">{}));</span>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="w">    </span><span class="c1">// ((atom_tid,atom_val),(rest_tid,rest_val)) -&gt; (m,n)</span>
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>
+<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="w">    </span><span class="c1">// Transform to the trg layout</span>
+<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">trg_layout_TV</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">atom_layout_TV</span><span class="p">.</span><span class="n">compose</span><span class="p">(</span><span class="n">ref2trg</span><span class="p">,</span><span class="w"> </span><span class="n">_</span><span class="p">);</span>
+<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="w">    </span><span class="c1">// ((trg_tid,trg_val),(rest_tid,rest_val)) -&gt; (m,n)</span>
+<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>
+<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a><span class="w">    </span><span class="c1">// Transform the thrs mode from thrid to thr_idx</span>
+<a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a><span class="w">    </span><span class="c1">// NOTE: Assumes the AtomNumThr are contiguous and identity within TiledThrID</span>
+<a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">thrval2mn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coalesce</span><span class="p">(</span><span class="n">zip</span><span class="p">(</span><span class="n">trg_layout_TV</span><span class="p">),</span><span class="w"> </span><span class="n">Shape</span><span class="o">&lt;</span><span class="n">_1</span><span class="p">,</span><span class="n">Shape</span><span class="o">&lt;</span><span class="n">_1</span><span class="p">,</span><span class="n">_1</span><span class="o">&gt;&gt;</span><span class="p">{});</span>
+<a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a><span class="w">    </span><span class="c1">// ((trg_tid,rest_tid),(trg_val,rest_val)) -&gt; (m,n)</span>
+<a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a>
+<a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a><span class="w">    </span><span class="c1">/// ==================</span>
+<a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a>
+<a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a><span class="w">    </span><span class="c1">// Transform the tile mode</span>
+<a id="__codelineno-7-27" name="__codelineno-7-27" href="#__codelineno-7-27"></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">tv_tensor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tensor</span><span class="p">.</span><span class="n">compose</span><span class="p">(</span><span class="n">thrval2mn</span><span class="p">,</span><span class="w"> </span><span class="n">_</span><span class="p">);</span>
+<a id="__codelineno-7-28" name="__codelineno-7-28" href="#__codelineno-7-28"></a><span class="w">    </span><span class="c1">// ((thrid,val),(RestM,RestN,...))</span>
+<a id="__codelineno-7-29" name="__codelineno-7-29" href="#__codelineno-7-29"></a>
+<a id="__codelineno-7-30" name="__codelineno-7-30" href="#__codelineno-7-30"></a><span class="w">    </span><span class="c1">// Unfold and return</span>
+<a id="__codelineno-7-31" name="__codelineno-7-31" href="#__codelineno-7-31"></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">tv_tensor</span><span class="p">(</span><span class="n">make_coord</span><span class="p">(</span><span class="n">_</span><span class="p">,</span><span class="n">_</span><span class="p">),</span><span class="w"> </span><span class="n">_</span><span class="p">);</span>
+<a id="__codelineno-7-32" name="__codelineno-7-32" href="#__codelineno-7-32"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-7-33" name="__codelineno-7-33" href="#__codelineno-7-33"></a>
+<a id="__codelineno-7-34" name="__codelineno-7-34" href="#__codelineno-7-34"></a><span class="w">  </span><span class="c1">// Tile a tensor or a layout from shape</span>
+<a id="__codelineno-7-35" name="__codelineno-7-35" href="#__codelineno-7-35"></a><span class="w">  </span><span class="c1">//   (M,N,...)</span>
+<a id="__codelineno-7-36" name="__codelineno-7-36" href="#__codelineno-7-36"></a><span class="w">  </span><span class="c1">// to shape</span>
+<a id="__codelineno-7-37" name="__codelineno-7-37" href="#__codelineno-7-37"></a><span class="w">  </span><span class="c1">//   (Thr,(FrgV,FrgX),(RestM,RestN,...))</span>
+<a id="__codelineno-7-38" name="__codelineno-7-38" href="#__codelineno-7-38"></a><span class="w">  </span><span class="c1">// where</span>
+<a id="__codelineno-7-39" name="__codelineno-7-39" href="#__codelineno-7-39"></a><span class="w">  </span><span class="c1">//   Thr:   The logical threads within the tiled copy.</span>
+<a id="__codelineno-7-40" name="__codelineno-7-40" href="#__codelineno-7-40"></a><span class="w">  </span><span class="c1">//   FrgV:  The values local to a COPY_ATOM Src.</span>
+<a id="__codelineno-7-41" name="__codelineno-7-41" href="#__codelineno-7-41"></a><span class="w">  </span><span class="c1">//   FrgX:  The values tiled across COPY_ATOMs Src.</span>
+<a id="__codelineno-7-42" name="__codelineno-7-42" href="#__codelineno-7-42"></a><span class="w">  </span><span class="c1">//   RestM: The values tiled in M.</span>
+<a id="__codelineno-7-43" name="__codelineno-7-43" href="#__codelineno-7-43"></a><span class="w">  </span><span class="c1">//   RestN: The values tiled in N.</span>
+<a id="__codelineno-7-44" name="__codelineno-7-44" href="#__codelineno-7-44"></a><span class="w">  </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">class</span><span class="w"> </span><span class="nc">STensor</span><span class="o">&gt;</span>
+<a id="__codelineno-7-45" name="__codelineno-7-45" href="#__codelineno-7-45"></a><span class="w">  </span><span class="n">CUTE_HOST_DEVICE</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="k">static</span>
+<a id="__codelineno-7-46" name="__codelineno-7-46" href="#__codelineno-7-46"></a><span class="w">  </span><span class="k">auto</span>
+<a id="__codelineno-7-47" name="__codelineno-7-47" href="#__codelineno-7-47"></a><span class="w">  </span><span class="n">tidfrg_S</span><span class="p">(</span><span class="n">STensor</span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">stensor</span><span class="p">)</span>
+<a id="__codelineno-7-48" name="__codelineno-7-48" href="#__codelineno-7-48"></a><span class="w">  </span><span class="p">{</span>
+<a id="__codelineno-7-49" name="__codelineno-7-49" href="#__codelineno-7-49"></a><span class="w">    </span><span class="n">CUTE_STATIC_ASSERT_V</span><span class="p">(</span><span class="n">rank</span><span class="p">(</span><span class="n">stensor</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">rank</span><span class="p">(</span><span class="n">Tiler_MN</span><span class="p">{}),</span><span class="w"> </span><span class="s">&quot;Rank of tensor to be partitioned too small.&quot;</span><span class="p">);</span>
+<a id="__codelineno-7-50" name="__codelineno-7-50" href="#__codelineno-7-50"></a>
+<a id="__codelineno-7-51" name="__codelineno-7-51" href="#__codelineno-7-51"></a><span class="w">    </span><span class="c1">// Tile the stensor and compute the (src-thr, src-val) -&gt; (ref-thr, ref-val) layout</span>
+<a id="__codelineno-7-52" name="__codelineno-7-52" href="#__codelineno-7-52"></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">tile2thrfrg</span><span class="p">(</span><span class="n">zipped_divide</span><span class="p">(</span><span class="n">stensor</span><span class="p">,</span><span class="n">Tiler_MN</span><span class="p">{}),</span><span class="w"> </span><span class="n">right_inverse</span><span class="p">(</span><span class="n">AtomLayoutRef</span><span class="p">{}).</span><span class="n">compose</span><span class="p">(</span><span class="n">AtomLayoutSrc</span><span class="p">{}));</span>
+<a id="__codelineno-7-53" name="__codelineno-7-53" href="#__codelineno-7-53"></a><span class="w">  </span><span class="p">}</span>
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.expand", "navigation.indexes", "toc.follow", "toc.integrate", "search.suggest", "search.highlight", "content.tabs.link", "content.code.annotation", "content.code.copy"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+      
+        <script src="../../js/math-render.js"></script>
+      
+    
+  </body>
+</html>
