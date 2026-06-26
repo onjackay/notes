@@ -173,6 +173,7 @@ copy_unpack(AnyCPYTraits            const&,
 否则，调用 `copy(*this, tensor<0>(src), tensor<0>(dst))`，去掉最外层的 1-rank shape 后回到 `copy.hpp` 中的自由函数：
 
 ```cpp
+// cute/algorithm/copy.hpp
 template <class... CopyArgs,
           class SrcEngine, class SrcLayout,
           class DstEngine, class DstLayout>
@@ -192,26 +193,13 @@ copy(Copy_Atom<CopyArgs...>       const& copy_atom,
     Tensor dst_v = group_modes<1,R>(dst);
 
     if constexpr (is_static<decltype(shape(src_v))>::value && is_static<decltype(shape(dst_v))>::value) {
-      CUTE_STATIC_ASSERT_V(size<1>(src_v) == size<1>(dst_v));
-
       // AutoFilter on the Rest-mode
       auto dst_null = nullspace(layout<1>(dst_v));
 
       Tensor dst_n = zipped_divide(dst_v, make_tile(shape<0>(dst_v), dst_null));  // ((V, NLL), (_1, Rest))
       Tensor src_n = zipped_divide(src_v, make_tile(shape<0>(src_v), dst_null));  // ((V, NLL), (_1, Rest))
-
-      CUTE_STATIC_ASSERT_V(size<1>(src_n) == size<1>(dst_n));
-      CUTE_STATIC_ASSERT_V((cosize<0,1>(dst_n.layout()) == Int<1>{}), "Nullspace definition error");
-      CUTE_STATIC_ASSERT_V((cosize<0,1>(src_n.layout()) == Int<1>{}), "Error: Ambiguous scatter detected in copy");
-      CUTE_STATIC_ASSERT_V((size<1,0>(dst_n) == Int<1>{}));
-      CUTE_STATIC_ASSERT_V((size<1,0>(src_n) == Int<1>{}));
-
       Tensor dst_c = dst_n(make_coord(_,Int<0>{}),make_coord(Int<0>{},_));        // (V, Rest)
       Tensor src_c = src_n(make_coord(_,Int<0>{}),make_coord(Int<0>{},_));        // (V, Rest)
-
-      CUTE_STATIC_ASSERT_V( size<1>(src_c) ==  size<1>(dst_c));
-      CUTE_STATIC_ASSERT_V(shape<0>(dst_c) == shape<0>(dst));
-      CUTE_STATIC_ASSERT_V(shape<0>(src_c) == shape<0>(src));
 
       CUTE_UNROLL
       for (int i = 0; i < size<1>(dst_c); ++i) {
@@ -230,3 +218,98 @@ copy(Copy_Atom<CopyArgs...>       const& copy_atom,
 如果这时 rank 仍等于 1，则直接进入 `Copy_Atom::call()`。
 否则，会对除了 mode-0 以外的 mode 循环，然后对 mode-0 调用 `Copy_Atom::call()`。
 从此处可见，调用 `cute::copy()` 始终需要将每次 atom 操作的 src/dst layout 放在 mode-0，其他 mode 代表 atom 循环次数。
+
+在 src/dst 的 layout 是静态的时候，layout 中的 nullspace（stride=0 的空间）会被过滤掉，跳过在重复地址上的循环。
+对于动态 layout 的情况，编译期无法计算 nullspace，此时只能朴素地遍历所有的元素。
+
+## Tiled Copy
+
+```cpp
+template <class Copy_Atom,
+          class LayoutCopy_TV,  // (tid,vid) -> coord   [Need not be 2D...]
+          class ShapeTiler_MN>  // coord space
+struct TiledCopy : Copy_Atom
+{
+  // Layout information from the CopyAtom
+  using AtomThrID     = typename Copy_Atom::ThrID;        // thrid -> thr_idx
+  using AtomLayoutSrc = typename Copy_Atom::ValLayoutSrc; // (thr,val) -> offset
+  using AtomLayoutDst = typename Copy_Atom::ValLayoutDst; // (thr,val) -> offset
+  using AtomLayoutRef = typename Copy_Atom::ValLayoutRef; // (thr,val) -> offset
+
+  using AtomNumThr = decltype(size<0>(AtomLayoutRef{}));
+  using AtomNumVal = decltype(size<1>(AtomLayoutRef{}));
+
+  // Layout information for the TiledCopy
+  using Tiler_MN       = ShapeTiler_MN;
+  using TiledLayout_TV = LayoutCopy_TV;
+  using TiledNumThr    = decltype(size<0>(TiledLayout_TV{}));
+  using TiledNumVal    = decltype(size<1>(TiledLayout_TV{}));
+
+  CUTE_STATIC_ASSERT_V(TiledNumThr{} % AtomNumThr{} == Int<0>{}, "TiledCopy uses too few thrs for selected CopyAtom");
+  CUTE_STATIC_ASSERT_V(TiledNumVal{} % AtomNumVal{} == Int<0>{}, "TiledCopy uses too few vals for selected CopyAtom");
+```
+
+对单个 Copy Atom 进行扩展，就得到了 Tiled Copy。
+扩展发生在两个维度上：线程数量上的扩展 (AtomNumThr -> TiledNumThr)，和单一线程上多次 Atom 的扩展 (AtomNumVal -> TiledNumVal)。
+这两个扩展表现在构造参数 TV-Layout 上，T 的 size 代表线程数量，而 V 的 size 代表单一线程处理的元素个数。
+
+另一个构造参数 TilerMN 表示整个 Tiled Copy 的块大小。
+
+构造参数使用的 TV-Layout 是相对于 atom 的 ref layout 的，那么当 src/dst layout 不等于 ref layout 时，相对于 src/dst layout 的 TV-Layout 则需要进行转换。
+以 src 为例：
+
+```cpp
+  // Tile a tensor or a layout from shape
+  //   ((TileM,TileN,...), (RestM,RestN,...))
+  // to shape
+  //   (Thr,(FrgV,FrgX),(RestM,RestN,...))
+  template <class Tensor, class Ref2TrgLayout>
+  CUTE_HOST_DEVICE constexpr static
+  auto
+  tile2thrfrg(Tensor&& tensor, Ref2TrgLayout const& ref2trg)
+  {
+    // Take the thrs/vals that the atom is interested in
+    // NOTE: Assumes the AtomNumThr are contiguous and identity within TiledThrID
+    auto atom_layout_TV = zipped_divide(TiledLayout_TV{}, make_shape(AtomNumThr{}, AtomNumVal{}));
+    // ((atom_tid,atom_val),(rest_tid,rest_val)) -> (m,n)
+
+    // Transform to the trg layout
+    auto trg_layout_TV = atom_layout_TV.compose(ref2trg, _);
+    // ((trg_tid,trg_val),(rest_tid,rest_val)) -> (m,n)
+
+    // Transform the thrs mode from thrid to thr_idx
+    // NOTE: Assumes the AtomNumThr are contiguous and identity within TiledThrID
+    auto thrval2mn = coalesce(zip(trg_layout_TV), Shape<_1,Shape<_1,_1>>{});
+    // ((trg_tid,rest_tid),(trg_val,rest_val)) -> (m,n)
+
+    /// ==================
+
+    // Transform the tile mode
+    auto tv_tensor = tensor.compose(thrval2mn, _);
+    // ((thrid,val),(RestM,RestN,...))
+
+    // Unfold and return
+    return tv_tensor(make_coord(_,_), _);
+  }
+  
+  // Tile a tensor or a layout from shape
+  //   (M,N,...)
+  // to shape
+  //   (Thr,(FrgV,FrgX),(RestM,RestN,...))
+  // where
+  //   Thr:   The logical threads within the tiled copy.
+  //   FrgV:  The values local to a COPY_ATOM Src.
+  //   FrgX:  The values tiled across COPY_ATOMs Src.
+  //   RestM: The values tiled in M.
+  //   RestN: The values tiled in N.
+  template <class STensor>
+  CUTE_HOST_DEVICE constexpr static
+  auto
+  tidfrg_S(STensor&& stensor)
+  {
+    CUTE_STATIC_ASSERT_V(rank(stensor) >= rank(Tiler_MN{}), "Rank of tensor to be partitioned too small.");
+
+    // Tile the stensor and compute the (src-thr, src-val) -> (ref-thr, ref-val) layout
+    return tile2thrfrg(zipped_divide(stensor,Tiler_MN{}), right_inverse(AtomLayoutRef{}).compose(AtomLayoutSrc{}));
+  }
+```
